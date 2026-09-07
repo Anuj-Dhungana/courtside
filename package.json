@@ -37,7 +37,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.1",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^10.10.0",
+    "eslint": "^9.39.5",
     "eslint-config-next": "15.5.25",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.6",
