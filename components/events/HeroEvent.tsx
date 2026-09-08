@@ -2,8 +2,9 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { Badge, LiveBadge } from "@/components/ui/Badge";
+import { ClientDateTime } from "@/components/ui/ClientTime";
 import { TeamBadge } from "@/components/ui/TeamBadge";
-import { formatDateTime, sportLabel } from "@/lib/utils/format";
+import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
 
 /** Large featured event banner for the homepage hero. */
@@ -49,7 +50,7 @@ export function HeroEvent({ event }: { event: SportEvent }) {
       )}
 
       <p className="mt-6 text-center text-sm text-ink-500">
-        {formatDateTime(event.startTime)}
+        <ClientDateTime ms={event.startTime} />
         <span className="ml-2 inline-flex items-center gap-1 font-medium text-brand-400 opacity-0 transition-opacity group-hover:opacity-100">
           <span>View event</span>
           <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />

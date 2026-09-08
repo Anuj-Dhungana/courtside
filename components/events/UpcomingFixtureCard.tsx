@@ -2,13 +2,12 @@ import { Info } from "lucide-react";
 import Link from "next/link";
 
 import { TeamBadge } from "@/components/ui/TeamBadge";
-import { formatTime, relativeLabel, sportLabel } from "@/lib/utils/format";
+import { ClientCountdown, ClientTime } from "@/components/ui/ClientTime";
+import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
 
 export function UpcomingFixtureCard({ event }: { event: SportEvent }) {
   const hasTeams = Boolean(event.home && event.away);
-  const timeStr = formatTime(event.startTime);
-  const countdownStr = relativeLabel(event.startTime);
 
   // Extract a league/tournament label or fallback to sport label
   const leagueLabel = getTournamentLabel(event);
@@ -25,7 +24,7 @@ export function UpcomingFixtureCard({ event }: { event: SportEvent }) {
             {leagueLabel}
           </span>
           <span className="shrink-0 rounded-md bg-surface-800/90 px-2 py-0.5 text-[10px] font-bold text-ink-200 ring-1 ring-surface-700/60">
-            {timeStr}
+            <ClientTime ms={event.startTime} />
           </span>
         </div>
 
@@ -57,7 +56,7 @@ export function UpcomingFixtureCard({ event }: { event: SportEvent }) {
       {/* Bottom: Countdown pill & Info icon */}
       <div className="mt-3.5 flex items-center justify-between pt-1">
         <span className="rounded-full border border-brand-500/25 bg-brand-500/10 px-2.5 py-0.5 text-[10px] font-medium text-brand-400">
-          {countdownStr}
+          <ClientCountdown ms={event.startTime} />
         </span>
         <span
           className="text-ink-500 transition-colors group-hover:text-ink-300"

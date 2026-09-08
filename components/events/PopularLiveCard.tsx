@@ -1,6 +1,7 @@
 import { Clock, Play } from "lucide-react";
 import Link from "next/link";
 
+import { ClientElapsed } from "@/components/ui/ClientTime";
 import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
 
@@ -9,8 +10,6 @@ export function PopularLiveCard({ event }: { event: SportEvent }) {
   const title = hasTeams
     ? `${event.home!.name} vs ${event.away!.name}`
     : event.title;
-
-  const elapsedText = getLiveElapsed(event);
 
   return (
     <div className="group relative flex flex-col justify-between rounded-2xl border border-surface-800/80 bg-surface-900/90 p-3.5 transition-all hover:border-surface-700 hover:bg-surface-850/90">
@@ -42,7 +41,7 @@ export function PopularLiveCard({ event }: { event: SportEvent }) {
         {/* Elapsed / Timing */}
         <div className="mt-1.5 flex items-center gap-1 text-[11px] text-ink-400">
           <Clock className="h-3 w-3 text-ink-500" />
-          <span>{elapsedText}</span>
+          <ClientElapsed startTime={event.startTime} />
         </div>
       </div>
 
@@ -62,17 +61,4 @@ export function PopularLiveCard({ event }: { event: SportEvent }) {
       </div>
     </div>
   );
-}
-
-function getLiveElapsed(event: SportEvent): string {
-  if (!event.startTime) return "In progress";
-  const elapsedMs = Date.now() - event.startTime;
-  if (elapsedMs < 0) return "Starting now";
-  const mins = Math.floor(elapsedMs / 60_000);
-  const hours = Math.floor(mins / 60);
-  const remMins = mins % 60;
-  if (hours > 0) {
-    return `${hours}h ${remMins}m`;
-  }
-  return `${mins}'`;
 }

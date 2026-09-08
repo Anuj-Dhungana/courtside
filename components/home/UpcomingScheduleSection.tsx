@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { UpcomingFixtureCard } from "@/components/events/UpcomingFixtureCard";
+import { TimezoneIndicator } from "@/components/ui/ClientTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { SportEvent } from "@/types";
 
@@ -25,9 +26,12 @@ export function UpcomingScheduleSection({
           <p className="mb-1 text-xs font-bold uppercase tracking-wider text-brand-400">
             Schedule
           </p>
-          <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-            {tab === "today" ? "Upcoming Today" : "Upcoming Tomorrow"}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+              {tab === "today" ? "Upcoming Today" : "Upcoming Tomorrow"}
+            </h2>
+            <TimezoneIndicator />
+          </div>
         </div>
 
         {/* TODAY / TOMORROW toggle buttons */}

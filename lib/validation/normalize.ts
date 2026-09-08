@@ -66,7 +66,8 @@ export function deriveStatus(
   if (isInLiveFeed) return "live";
 
   // 4. 24/7 dedicated broadcast channels from admin (e.g. admin-espn for US Open, admin-tennis-channel)
-  if (startTime === 0 && meta?.id?.startsWith("admin-")) {
+  // Some admin channels use negative timestamps (e.g. -3600000) instead of exactly 0.
+  if (startTime <= 0 && meta?.id?.startsWith("admin-")) {
     return "live";
   }
 

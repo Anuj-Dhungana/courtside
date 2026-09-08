@@ -74,8 +74,9 @@ export async function getLiveEvents(): Promise<SportEvent[]> {
   ]);
 
   // Include 24/7 dedicated live broadcast channels (e.g. US Open, Tennis Channel)
+  // Admin channels may have startTime of 0 or negative values (e.g. -3600000).
   const channels = todayMatches.filter(
-    (c) => c.status === "live" && c.startTime === 0,
+    (c) => c.status === "live" && c.startTime <= 0,
   );
 
   // Deduplicate: If an admin channel represents the same event as a live match
@@ -163,16 +164,21 @@ export async function getSportEvents(sportId: string): Promise<SportEvent[]> {
     ),
     getLiveEvents().catch(() => [] as SportEvent[]),
   ]);
-  return sortEvents(mergeLiveStatus(events, live));
+  return sortEvents(mergeLiveStatus(events, live, sportId));
 }
 
 /** Mark events as live when they appear in the authoritative live feed. */
 function mergeLiveStatus(
   events: SportEvent[],
   live: SportEvent[],
+  filterSportId?: string,
 ): SportEvent[] {
-  if (live.length === 0) return events;
-  const liveMap = new Map(live.map((e) => [e.id, e]));
+  const relevantLive = filterSportId
+    ? live.filter((e) => e.sportId === filterSportId)
+    : live;
+
+  if (relevantLive.length === 0) return events;
+  const liveMap = new Map(relevantLive.map((e) => [e.id, e]));
   const existingIds = new Set<string>();
 
   const merged = events.map((e) => {
@@ -188,7 +194,7 @@ function mergeLiveStatus(
     return e;
   });
 
-  for (const liveEvent of live) {
+  for (const liveEvent of relevantLive) {
     if (!existingIds.has(liveEvent.id)) {
       merged.push(liveEvent);
     }

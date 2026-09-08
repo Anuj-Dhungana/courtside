@@ -62,6 +62,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={geistSans.variable}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz&&!document.cookie.includes('user-tz=')){document.cookie='user-tz='+encodeURIComponent(tz)+';path=/;max-age=31536000;SameSite=Lax';}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="flex min-h-screen flex-col font-sans">
         <a
           href="#main"

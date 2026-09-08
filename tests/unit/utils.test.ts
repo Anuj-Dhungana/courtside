@@ -27,6 +27,46 @@ describe("format utilities", () => {
     expect(sportLabel("tennis")).toBe("Tennis");
   });
 
+  it("formats time correctly across different timezones", () => {
+    // 1788893100000 = 2026-09-08T18:45:00.000Z
+    const kickoffMs = 1788893100000;
+    expect(formatTime(kickoffMs, "UTC")).toBe("6:45 PM");
+    expect(formatTime(kickoffMs, "Asia/Kathmandu")).toBe("12:30 AM");
+    expect(formatTime(kickoffMs, "America/New_York")).toBe("2:45 PM");
+    expect(formatTime(kickoffMs, "Europe/London")).toBe("7:45 PM");
+  });
+
+  it("groups events by day bucket respecting timezones", () => {
+    // 23:25 in Nepal = 17:40 UTC
+    const now = new Date("2026-09-08T17:40:00.000Z").getTime();
+    // Event is at 18:45 UTC = 00:30 Sep 9 in Nepal
+    const kickoffMs = 1788893100000;
+    const mk = (id: string, t: number): SportEvent => ({
+      id,
+      title: id,
+      sportId: "football",
+      startTime: t,
+      posterUrl: null,
+      popular: false,
+      home: null,
+      away: null,
+      sources: [],
+      status: "upcoming",
+    });
+
+    // In UTC, kickoff (18:45 on Sep 8) is "Today"
+    const utcGroups = groupEventsByDay([mk("match-1", kickoffMs)], now, "UTC");
+    expect(utcGroups[0]?.label).toBe("Today");
+
+    // In Asia/Kathmandu, kickoff (00:30 on Sep 9) is "Tomorrow"
+    const nepalGroups = groupEventsByDay(
+      [mk("match-1", kickoffMs)],
+      now,
+      "Asia/Kathmandu",
+    );
+    expect(nepalGroups[0]?.label).toBe("Tomorrow");
+  });
+
   it("groups events into Today/Tomorrow buckets", () => {
     const now = Date.now();
     const mk = (id: string, t: number): SportEvent => ({

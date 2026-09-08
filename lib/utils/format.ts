@@ -1,28 +1,44 @@
 import type { SportEvent } from "@/types";
 
-/** Format a ms timestamp as a short local time, e.g. "6:30 PM". */
-export function formatTime(ms: number): string {
+/** Format a ms timestamp as a short local time, e.g. "6:30 PM" or "12:30 AM". */
+export function formatTime(ms: number, timeZone?: string): string {
   if (!ms) return "TBD";
-  return new Date(ms).toLocaleTimeString("en-US", {
+  const options: Intl.DateTimeFormatOptions = {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  });
+  };
+  if (timeZone) {
+    try {
+      options.timeZone = timeZone;
+    } catch {
+      // ignore invalid timezone
+    }
+  }
+  return new Date(ms).toLocaleTimeString("en-US", options);
 }
 
 /** Format a ms timestamp as a readable date, e.g. "Sun, 7 Sep". */
-export function formatDate(ms: number): string {
+export function formatDate(ms: number, timeZone?: string): string {
   if (!ms) return "Date TBD";
-  return new Date(ms).toLocaleDateString("en-GB", {
+  const options: Intl.DateTimeFormatOptions = {
     weekday: "short",
     day: "numeric",
     month: "short",
-  });
+  };
+  if (timeZone) {
+    try {
+      options.timeZone = timeZone;
+    } catch {
+      // ignore invalid timezone
+    }
+  }
+  return new Date(ms).toLocaleDateString("en-GB", options);
 }
 
-export function formatDateTime(ms: number): string {
+export function formatDateTime(ms: number, timeZone?: string): string {
   if (!ms) return "Time TBD";
-  return `${formatDate(ms)} · ${formatTime(ms)}`;
+  return `${formatDate(ms, timeZone)} · ${formatTime(ms, timeZone)}`;
 }
 
 /** Human-readable relative label: "in 2h 15m", "Started 30m ago". */
@@ -42,28 +58,44 @@ export function relativeLabel(ms: number, now = Date.now()): string {
   return diff >= 0 ? `in ${span}` : `${span} ago`;
 }
 
+/** Helper to get YYYY-MM-DD for a timestamp in a given timezone */
+function getDayKey(ms: number, timeZone?: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  };
+  if (timeZone) {
+    try {
+      options.timeZone = timeZone;
+    } catch {}
+  }
+  return new Intl.DateTimeFormat("en-CA", options).format(new Date(ms));
+}
+
 /** Group events by day bucket label ("Today", "Tomorrow", or a date). */
 export function groupEventsByDay(
   events: SportEvent[],
   now = Date.now(),
+  timeZone?: string,
 ): { label: string; events: SportEvent[] }[] {
-  const startOfDay = (t: number) => {
-    const d = new Date(t);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-  };
-  const today = startOfDay(now);
-  const tomorrow = today + 86_400_000;
+  const todayKey = getDayKey(now, timeZone);
+  const tomorrowKey = getDayKey(now + 86_400_000, timeZone);
 
   const buckets = new Map<string, SportEvent[]>();
   for (const e of events) {
     let label: string;
-    if (!e.startTime) label = "Time TBD";
-    else {
-      const day = startOfDay(e.startTime);
-      if (day === today) label = "Today";
-      else if (day === tomorrow) label = "Tomorrow";
-      else label = formatDate(e.startTime);
+    if (!e.startTime) {
+      label = "Time TBD";
+    } else {
+      const eventDayKey = getDayKey(e.startTime, timeZone);
+      if (eventDayKey === todayKey) {
+        label = "Today";
+      } else if (eventDayKey === tomorrowKey) {
+        label = "Tomorrow";
+      } else {
+        label = formatDate(e.startTime, timeZone);
+      }
     }
     const list = buckets.get(label) ?? [];
     list.push(e);
@@ -73,6 +105,16 @@ export function groupEventsByDay(
     label,
     events: evts,
   }));
+}
+
+/** Safe browser timezone detection */
+export function getUserTimezone(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Title-case a sport id like "american-football" -> "American Football". */

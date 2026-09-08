@@ -1,12 +1,13 @@
 import Link from "next/link";
 
 import { Badge, LiveBadge } from "@/components/ui/Badge";
+import { ClientTime, ClientTimeCaption } from "@/components/ui/ClientTime";
 import { TeamBadge } from "@/components/ui/TeamBadge";
-import { formatTime, relativeLabel, sportLabel } from "@/lib/utils/format";
+import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
 
 /**
- * Primary event card. Server component — no client JS.
+ * Primary event card. Server component with localized client time formatting.
  */
 export function EventCard({ event }: { event: SportEvent }) {
   const hasTeams = Boolean(event.home && event.away);
@@ -35,7 +36,9 @@ export function EventCard({ event }: { event: SportEvent }) {
         ) : event.status === "unknown" ? (
           <Badge variant="unknown">TBD</Badge>
         ) : (
-          <Badge variant="upcoming">{formatTime(event.startTime)}</Badge>
+          <Badge variant="upcoming">
+            <ClientTime ms={event.startTime} />
+          </Badge>
         )}
       </div>
 
@@ -50,22 +53,9 @@ export function EventCard({ event }: { event: SportEvent }) {
         </p>
       )}
 
-      <p className="mt-3.5 text-xs text-ink-600">{timeCaption(event)}</p>
+      <ClientTimeCaption event={event} />
     </Link>
   );
-}
-
-function timeCaption(event: SportEvent): string {
-  if (event.status === "live") {
-    if (!event.startTime) return "In progress";
-    return `Started ${relativeLabel(event.startTime)}`.replace("in ", "");
-  }
-  if (event.status === "delayed") return "Kickoff delayed · awaiting broadcast";
-  if (event.status === "postponed") return "Fixture postponed";
-  if (event.status === "cancelled") return "Fixture cancelled";
-  if (event.status === "suspended") return "Match suspended";
-  if (event.status === "finished") return "Match concluded";
-  return relativeLabel(event.startTime);
 }
 
 function TeamRow({

@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import { EventGrid } from "@/components/events/EventGrid";
 import { StreamSection } from "@/components/player/StreamSection";
 import { Badge, LiveBadge } from "@/components/ui/Badge";
+import { ClientCountdown, ClientDateTime } from "@/components/ui/ClientTime";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TeamBadge } from "@/components/ui/TeamBadge";
-import { formatDateTime, relativeLabel, sportLabel } from "@/lib/utils/format";
+import { sportLabel } from "@/lib/utils/format";
 import { getEventById, getSportEvents } from "@/server/services/catalog";
 
 export const revalidate = 60;
@@ -123,7 +124,7 @@ export default async function EventPage({ params }: Props) {
 
         <div className="mt-7 text-center">
           <p className="text-sm font-medium text-ink-300">
-            {formatDateTime(event.startTime)}
+            <ClientDateTime ms={event.startTime} />
           </p>
           <p className="mt-1 text-xs text-ink-600">
             {event.status === "live"
@@ -138,7 +139,9 @@ export default async function EventPage({ params }: Props) {
                       ? "Match suspended"
                       : event.status === "finished"
                         ? "Match concluded"
-                        : relativeLabel(event.startTime)}
+                        : (
+                          <ClientCountdown ms={event.startTime} />
+                        )}
           </p>
         </div>
       </header>

@@ -33,7 +33,8 @@ export default async function SportPage({ params }: Props) {
   if (sports.length > 0 && !sport) notFound();
 
   const label = sport?.name ?? sportLabel(sportId);
-  const events = await getSportEvents(sportId).catch(() => []);
+  const allEvents = await getSportEvents(sportId).catch(() => []);
+  const events = allEvents.filter((e) => e.sportId === sportId);
 
   const live = events.filter((e) => e.status === "live");
   const upcoming = events.filter(
