@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Home, LayoutGrid, Radio, Search } from "lucide-react";
+import { Calendar, Home, LayoutGrid, Radio, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: "/live", label: "Live", icon: Radio, hasLiveDot: true },
   { href: "/schedule", label: "Schedule", icon: Calendar },
   { href: "/sports", label: "Sports", icon: LayoutGrid },
-  { href: "/search", label: "Search", icon: Search },
+  { href: "/user", label: "User", icon: User },
 ] as const;
 
 export function BottomNav() {

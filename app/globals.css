@@ -102,3 +102,12 @@ body {
     animation: none;
   }
 }
+
+/* PWA Mobile & Safe Area Utilities */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+

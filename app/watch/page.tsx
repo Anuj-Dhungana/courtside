@@ -56,7 +56,7 @@ export default function WatchPage() {
     const home = sp.get("home") ?? undefined;
     const away = sp.get("away") ?? undefined;
 
-    if (!source || !id) {
+    if (!source && !id && !eventId) {
       setState("error");
       return;
     }
@@ -64,31 +64,119 @@ export default function WatchPage() {
     setParams({ source, id, streamNo, title, eventId, sport, home, away });
   }, []);
 
-  // Fetch streams for this source
+  // Fetch streams with automatic multi-source fallback
   const fetchStreams = useCallback(async (p: MatchMeta) => {
     setState("loading");
     try {
-      const res = await fetch(
-        `/api/streams/${encodeURIComponent(p.source)}/${encodeURIComponent(p.id)}`,
-        { cache: "no-store" },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { streams?: StreamOption[] };
-      const list = data.streams ?? [];
+      let candidateStreams: StreamOption[] = [];
 
-      if (list.length === 0) {
+      // 1. If a specific source and id was requested, try fetching that first
+      if (p.source && p.id) {
+        try {
+          const res = await fetch(
+            `/api/streams/${encodeURIComponent(p.source)}/${encodeURIComponent(p.id)}`,
+            { cache: "no-store" },
+          );
+          if (res.ok) {
+            const data = (await res.json()) as { streams?: StreamOption[] };
+            candidateStreams = data.streams ?? [];
+          }
+        } catch {
+          // ignore, will attempt event fallback below
+        }
+      }
+
+      // 2. If no streams found, or no source specified, check the event's full source list
+      const targetEventId = p.eventId || (p.source ? undefined : p.id);
+      if (candidateStreams.length === 0 && targetEventId) {
+        try {
+          const evRes = await fetch(
+            `/api/events/${encodeURIComponent(targetEventId)}`,
+            { cache: "no-store" },
+          );
+          if (evRes.ok) {
+            const evData = (await evRes.json()) as {
+              event?: {
+                title?: string;
+                sportId?: string;
+                home?: { name: string };
+                away?: { name: string };
+                sources?: Array<{ source: string; id: string }>;
+              };
+            };
+            const ev = evData.event;
+            if (ev) {
+              setParams((prev) => ({
+                source: prev?.source || ev.sources?.[0]?.source || "",
+                id: prev?.id || ev.sources?.[0]?.id || "",
+                streamNo: prev?.streamNo || 1,
+                title:
+                  prev?.title && prev.title !== "Live Sports Event"
+                    ? prev.title
+                    : ev.title ?? "Live Sports Event",
+                eventId: targetEventId,
+                sport: prev?.sport || ev.sportId,
+                home: prev?.home || ev.home?.name,
+                away: prev?.away || ev.away?.name,
+              }));
+
+              const otherSources = (ev.sources ?? []).filter(
+                (s) => !(s.source === p.source && s.id === p.id),
+              );
+
+              if (otherSources.length > 0) {
+                const results = await Promise.allSettled(
+                  otherSources.slice(0, 5).map(async (s) => {
+                    const r = await fetch(
+                      `/api/streams/${encodeURIComponent(s.source)}/${encodeURIComponent(s.id)}`,
+                      { cache: "no-store" },
+                    );
+                    if (!r.ok) return [];
+                    const d = (await r.json()) as { streams?: StreamOption[] };
+                    return d.streams ?? [];
+                  }),
+                );
+                const fetched = results
+                  .filter(
+                    (r): r is PromiseFulfilledResult<StreamOption[]> =>
+                      r.status === "fulfilled",
+                  )
+                  .flatMap((r) => r.value);
+
+                candidateStreams = [...candidateStreams, ...fetched];
+              }
+            }
+          }
+        } catch {
+          // fallback failed
+        }
+      }
+
+      if (candidateStreams.length === 0) {
         setState("error");
         return;
       }
 
-      list.sort((a, b) => {
+      // Deduplicate streams
+      const seen = new Set<string>();
+      const uniqueStreams = candidateStreams.filter((s) => {
+        const key = `${s.source}-${s.streamNo}-${s.embedUrl}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      uniqueStreams.sort((a, b) => {
         if (a.hd !== b.hd) return a.hd ? -1 : 1;
         return a.streamNo - b.streamNo;
       });
 
-      setStreams(list);
+      setStreams(uniqueStreams);
       const initial =
-        list.find((s) => s.streamNo === p.streamNo) ?? list[0];
+        uniqueStreams.find(
+          (s) =>
+            s.streamNo === p.streamNo && (!p.source || s.source === p.source),
+        ) ?? uniqueStreams[0];
       setSelectedStream(initial);
       setState("ready");
     } catch {
@@ -273,7 +361,16 @@ export default function WatchPage() {
             <p className="mt-2 text-sm text-ink-500">
               This feed might not be broadcasting yet or the link has expired. You can head back to the match page to check for alternate sources.
             </p>
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (params) void fetchStreams(params);
+                }}
+                className="rounded-xl border border-surface-700 bg-surface-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-surface-700 hover:text-white"
+              >
+                Retry
+              </button>
               {params?.eventId ? (
                 <Link
                   href={`/events/${encodeURIComponent(params.eventId)}`}
@@ -282,13 +379,12 @@ export default function WatchPage() {
                   Return to Event
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => window.close()}
-                  className="rounded-xl bg-surface-800 px-4 py-2 text-sm font-semibold text-ink-100 hover:bg-surface-700"
+                <Link
+                  href="/"
+                  className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-surface-950 transition hover:bg-brand-400"
                 >
-                  Close Tab
-                </button>
+                  Browse Matches
+                </Link>
               )}
             </div>
           </div>

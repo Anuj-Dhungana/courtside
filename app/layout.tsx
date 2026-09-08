@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { PwaProvider } from "@/components/pwa/PwaProvider";
 import { env } from "@/config/env";
 
 import "./globals.css";
@@ -16,12 +17,25 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.SITE_URL),
+  applicationName: "CourtSide",
   title: {
     default: "CourtSide — Live Sports Scores & Schedules",
     template: "%s | CourtSide",
   },
   description:
     "Follow live sports events, upcoming fixtures and schedules across football, basketball, tennis, cricket and more.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "CourtSide",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/apple-touch-icon.png",
+  },
   openGraph: {
     siteName: "CourtSide",
     type: "website",
@@ -40,6 +54,7 @@ export const viewport: Viewport = {
   themeColor: "#07090f",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -60,6 +75,7 @@ export default function RootLayout({
         </main>
         <Footer />
         <BottomNav />
+        <PwaProvider />
         <Analytics />
       </body>
     </html>

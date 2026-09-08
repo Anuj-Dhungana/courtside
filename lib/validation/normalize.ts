@@ -48,7 +48,7 @@ export function deriveStatus(
   startTime: number,
   now: number,
   isInLiveFeed: boolean,
-  meta?: { title?: string; upstreamStatus?: string | null },
+  meta?: { title?: string; upstreamStatus?: string | null; id?: string },
 ): EventStatus {
   // 1. Explicit title indicator has highest override priority
   if (meta?.title) {
@@ -65,7 +65,12 @@ export function deriveStatus(
   // 3. Authoritative live feed inclusion
   if (isInLiveFeed) return "live";
 
-  // 4. Time-based fallback with strict safeguards
+  // 4. 24/7 dedicated broadcast channels from admin (e.g. admin-espn for US Open, admin-tennis-channel)
+  if (startTime === 0 && meta?.id?.startsWith("admin-")) {
+    return "live";
+  }
+
+  // 5. Time-based fallback with strict safeguards
   if (startTime === 0) return "unknown";
   if (startTime > now) return "scheduled";
 
@@ -87,6 +92,7 @@ export function normalizeMatch(
   const status = deriveStatus(raw.date, now, options.isLive ?? false, {
     title,
     upstreamStatus: raw.status ?? raw.state,
+    id: raw.id,
   });
 
   return {

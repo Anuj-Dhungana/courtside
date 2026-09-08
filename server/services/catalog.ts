@@ -66,14 +66,61 @@ async function fetchMatches(
 }
 
 export async function getLiveEvents(): Promise<SportEvent[]> {
-  const events = await fetchMatches(
-    "/matches/live",
-    "matches:live",
-    15,
-    90,
-    true,
+  const [events, todayMatches] = await Promise.all([
+    fetchMatches("/matches/live", "matches:live", 15, 90, true),
+    fetchMatches("/matches/all-today", "matches:today", 60, 600, false).catch(
+      () => [] as SportEvent[],
+    ),
+  ]);
+
+  // Include 24/7 dedicated live broadcast channels (e.g. US Open, Tennis Channel)
+  const channels = todayMatches.filter(
+    (c) => c.status === "live" && c.startTime === 0,
   );
-  return sortEvents(events);
+
+  // Deduplicate: If an admin channel represents the same event as a live match
+  // (shares a source ID or matching title), the admin channel takes priority because
+  // it has active streams and correct category (e.g. tennis vs other).
+  const supersededLiveIds = new Set<string>();
+  for (const ch of channels) {
+    const cleanChTitle = ch.title.replace(/[^\w\s]/g, "").trim().toLowerCase();
+    for (const ev of events) {
+      const sharesSource =
+        ch.sources &&
+        ch.sources.some(
+          (cs) =>
+            ev.sources &&
+            ev.sources.some(
+              (es) => es.id === cs.id || es.id === ch.id || ev.id === cs.id,
+            ),
+        );
+      const cleanEvTitle = ev.title.replace(/[^\w\s]/g, "").trim().toLowerCase();
+      const sameTitle = cleanChTitle.length > 2 && cleanChTitle === cleanEvTitle;
+
+      if (sharesSource || sameTitle) {
+        supersededLiveIds.add(ev.id);
+      }
+    }
+  }
+
+  const existingIds = new Set<string>();
+  const merged: SportEvent[] = [];
+
+  for (const ev of events) {
+    if (!supersededLiveIds.has(ev.id) && !existingIds.has(ev.id)) {
+      existingIds.add(ev.id);
+      merged.push(ev);
+    }
+  }
+
+  for (const ch of channels) {
+    if (!existingIds.has(ch.id)) {
+      existingIds.add(ch.id);
+      merged.push(ch);
+    }
+  }
+
+  return sortEvents(merged);
 }
 
 export async function getTodayEvents(): Promise<SportEvent[]> {

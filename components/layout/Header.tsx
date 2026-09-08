@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -73,6 +73,20 @@ export function Header() {
             </Link>
           ))}
         </nav>
+
+        {/* Desktop right actions — User avatar */}
+        <Link
+          href="/user"
+          aria-label="User profile"
+          aria-current={pathname.startsWith("/user") ? "page" : undefined}
+          className={`hidden h-9 w-9 items-center justify-center rounded-full transition-colors md:flex ${
+            pathname.startsWith("/user")
+              ? "bg-brand-500/20 text-brand-400 ring-1 ring-brand-500/40"
+              : "bg-surface-850 text-ink-300 hover:bg-surface-800 hover:text-white"
+          }`}
+        >
+          <User className="h-4 w-4" />
+        </Link>
 
         {/* Mobile top bar actions (as in screenshot) */}
         <div className="flex items-center gap-2 md:hidden">

@@ -49,7 +49,11 @@ export function PopularLiveCard({ event }: { event: SportEvent }) {
       {/* Action Button */}
       <div className="mt-3.5 pt-1">
         <Link
-          href={`/watch?id=${encodeURIComponent(event.id)}`}
+          href={
+            event.sources && event.sources.length > 0
+              ? `/watch?eventId=${encodeURIComponent(event.id)}&source=${encodeURIComponent(event.sources[0].source)}&id=${encodeURIComponent(event.sources[0].id)}&title=${encodeURIComponent(title)}`
+              : `/events/${encodeURIComponent(event.id)}`
+          }
           className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-400 py-2 text-center text-xs font-bold text-surface-950 shadow-sm shadow-emerald-500/20 transition-all hover:bg-emerald-300 active:scale-[0.98]"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
