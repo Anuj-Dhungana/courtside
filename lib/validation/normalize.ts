@@ -5,27 +5,77 @@ import type { EventStatus, Sport, SportEvent, StreamOption } from "@/types";
 /**
  * Normalization: raw validated API objects -> application domain models.
  *
- * Status derivation: the Streamed API does not expose an explicit status
- * field, so we derive it from timestamps relative to now:
- *  - present in /matches/live feed  -> "live" (authoritative)
- *  - otherwise: start <= now && within LIVE_WINDOW -> assumed live window
- *  - start > now                    -> "upcoming"
- *  - older than LIVE_WINDOW         -> "finished"
+ * Status Priority Rules:
+ *  1. Explicit Title/Metadata Indicators: Check title and raw upstream status
+ *     for cancellation, postponement, suspension, or delay.
+ *  2. Authoritative Live Feed: If present in /matches/live -> "live".
+ *  3. Upstream status field (if provided by upstream API).
+ *  4. Strict Kickoff Fallback (NEVER automatically label LIVE):
+ *     - startTime === 0: "unknown"
+ *     - startTime > now: "scheduled"
+ *     - startTime <= now && NOT in live feed:
+ *         - elapsed > 4h: "finished"
+ *         - elapsed <= 4h: "delayed" (never "live" - avoids false live on unconfirmed matches)
  */
 
-/** How long after kickoff we still consider an event potentially ongoing. */
-const LIVE_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+/** Max expected duration of an active fixture before assuming conclusion. */
+const MAX_EVENT_DURATION_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+export function parseStatusFromTitle(title: string): EventStatus | null {
+  if (!title) return null;
+  const lower = title.toLowerCase();
+  if (/\b(?:postponed|postp\.)\b/i.test(lower)) return "postponed";
+  if (/\b(?:cancelled|canceled|canc\.)\b/i.test(lower)) return "cancelled";
+  if (/\b(?:suspended|interrupted|abandoned)\b/i.test(lower)) return "suspended";
+  if (/\b(?:delayed)\b/i.test(lower)) return "delayed";
+  return null;
+}
+
+export function parseUpstreamStatus(rawStatus?: string | null): EventStatus | null {
+  if (!rawStatus) return null;
+  const s = rawStatus.trim().toLowerCase();
+  if (["live", "in_progress", "ongoing", "active"].includes(s)) return "live";
+  if (["finished", "ft", "completed", "ended", "final"].includes(s)) return "finished";
+  if (["postponed", "postp"].includes(s)) return "postponed";
+  if (["cancelled", "canceled"].includes(s)) return "cancelled";
+  if (["suspended", "interrupted", "abandoned"].includes(s)) return "suspended";
+  if (["delayed"].includes(s)) return "delayed";
+  if (["scheduled", "upcoming", "not_started"].includes(s)) return "scheduled";
+  return null;
+}
 
 export function deriveStatus(
   startTime: number,
   now: number,
   isInLiveFeed: boolean,
+  meta?: { title?: string; upstreamStatus?: string | null },
 ): EventStatus {
+  // 1. Explicit title indicator has highest override priority
+  if (meta?.title) {
+    const titleStatus = parseStatusFromTitle(meta.title);
+    if (titleStatus) return titleStatus;
+  }
+
+  // 2. Explicit upstream status if recognized
+  if (meta?.upstreamStatus) {
+    const parsed = parseUpstreamStatus(meta.upstreamStatus);
+    if (parsed) return parsed;
+  }
+
+  // 3. Authoritative live feed inclusion
   if (isInLiveFeed) return "live";
-  if (startTime === 0) return "upcoming";
-  if (startTime > now) return "upcoming";
-  if (now - startTime <= LIVE_WINDOW_MS) return "live";
-  return "finished";
+
+  // 4. Time-based fallback with strict safeguards
+  if (startTime === 0) return "unknown";
+  if (startTime > now) return "scheduled";
+
+  // Event start time is in the past, but it is NOT in the authoritative live feed.
+  // NEVER assume an event is LIVE without authoritative live feed confirmation.
+  const elapsed = now - startTime;
+  if (elapsed > MAX_EVENT_DURATION_MS) return "finished";
+
+  // Past kickoff time but not confirmed live: mark as delayed awaiting feed
+  return "delayed";
 }
 
 export function normalizeMatch(
@@ -33,9 +83,15 @@ export function normalizeMatch(
   options: { isLive?: boolean; now?: number } = {},
 ): SportEvent {
   const now = options.now ?? Date.now();
+  const title = raw.title.trim();
+  const status = deriveStatus(raw.date, now, options.isLive ?? false, {
+    title,
+    upstreamStatus: raw.status ?? raw.state,
+  });
+
   return {
     id: raw.id,
-    title: raw.title.trim(),
+    title,
     sportId: raw.category,
     startTime: raw.date,
     posterUrl: posterUrl(raw.poster ?? null),
@@ -53,7 +109,7 @@ export function normalizeMatch(
         }
       : null,
     sources: raw.sources,
-    status: deriveStatus(raw.date, now, options.isLive ?? false),
+    status,
   };
 }
 
@@ -72,27 +128,38 @@ export function normalizeStream(raw: ApiStream): StreamOption {
   };
 }
 
-/** Sort: live first, then soonest upcoming, then most recent finished. */
+/** Sort: live first, then delayed, then upcoming/scheduled by soonest, then others. */
 export function sortEvents(
   events: SportEvent[],
   now = Date.now(),
 ): SportEvent[] {
   const rank: Record<EventStatus, number> = {
     live: 0,
-    upcoming: 1,
-    finished: 2,
+    delayed: 1,
+    scheduled: 2,
+    upcoming: 2,
+    suspended: 3,
+    postponed: 4,
+    cancelled: 5,
+    finished: 6,
+    unknown: 7,
   };
   return [...events].sort((a, b) => {
-    if (rank[a.status] !== rank[b.status])
-      return rank[a.status] - rank[b.status];
+    const rankDiff = (rank[a.status] ?? 8) - (rank[b.status] ?? 8);
+    if (rankDiff !== 0) return rankDiff;
+
     if (a.status === "finished") return b.startTime - a.startTime;
-    if (a.status === "upcoming") {
+    if (a.status === "scheduled" || a.status === "upcoming") {
       const at = a.startTime || Number.MAX_SAFE_INTEGER;
       const bt = b.startTime || Number.MAX_SAFE_INTEGER;
       return at - bt;
     }
     // live: popular first, then by recency of start
-    if (a.popular !== b.popular) return a.popular ? -1 : 1;
-    return Math.abs(now - a.startTime) - Math.abs(now - b.startTime);
+    if (a.status === "live") {
+      if (a.popular !== b.popular) return a.popular ? -1 : 1;
+      return Math.abs(now - a.startTime) - Math.abs(now - b.startTime);
+    }
+    // other statuses: soonest startTime first
+    return (a.startTime || 0) - (b.startTime || 0);
   });
 }

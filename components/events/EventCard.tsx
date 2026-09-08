@@ -24,6 +24,16 @@ export function EventCard({ event }: { event: SportEvent }) {
           <LiveBadge />
         ) : event.status === "finished" ? (
           <Badge variant="finished">Finished</Badge>
+        ) : event.status === "delayed" ? (
+          <Badge variant="delayed">Delayed</Badge>
+        ) : event.status === "postponed" ? (
+          <Badge variant="postponed">Postponed</Badge>
+        ) : event.status === "cancelled" ? (
+          <Badge variant="cancelled">Cancelled</Badge>
+        ) : event.status === "suspended" ? (
+          <Badge variant="suspended">Suspended</Badge>
+        ) : event.status === "unknown" ? (
+          <Badge variant="unknown">TBD</Badge>
         ) : (
           <Badge variant="upcoming">{formatTime(event.startTime)}</Badge>
         )}
@@ -50,6 +60,11 @@ function timeCaption(event: SportEvent): string {
     if (!event.startTime) return "In progress";
     return `Started ${relativeLabel(event.startTime)}`.replace("in ", "");
   }
+  if (event.status === "delayed") return "Kickoff delayed · awaiting broadcast";
+  if (event.status === "postponed") return "Fixture postponed";
+  if (event.status === "cancelled") return "Fixture cancelled";
+  if (event.status === "suspended") return "Match suspended";
+  if (event.status === "finished") return "Match concluded";
   return relativeLabel(event.startTime);
 }
 

@@ -88,6 +88,16 @@ export default async function EventPage({ params }: Props) {
             <LiveBadge />
           ) : event.status === "finished" ? (
             <Badge variant="finished">Finished</Badge>
+          ) : event.status === "delayed" ? (
+            <Badge variant="delayed">Delayed</Badge>
+          ) : event.status === "postponed" ? (
+            <Badge variant="postponed">Postponed</Badge>
+          ) : event.status === "cancelled" ? (
+            <Badge variant="cancelled">Cancelled</Badge>
+          ) : event.status === "suspended" ? (
+            <Badge variant="suspended">Suspended</Badge>
+          ) : event.status === "unknown" ? (
+            <Badge variant="unknown">Date TBD</Badge>
           ) : (
             <Badge variant="upcoming">Upcoming</Badge>
           )}
@@ -118,7 +128,17 @@ export default async function EventPage({ params }: Props) {
           <p className="mt-1 text-xs text-ink-600">
             {event.status === "live"
               ? "In progress"
-              : relativeLabel(event.startTime)}
+              : event.status === "delayed"
+                ? "Kickoff delayed · awaiting broadcast"
+                : event.status === "postponed"
+                  ? "Match postponed"
+                  : event.status === "cancelled"
+                    ? "Match cancelled"
+                    : event.status === "suspended"
+                      ? "Match suspended"
+                      : event.status === "finished"
+                        ? "Match concluded"
+                        : relativeLabel(event.startTime)}
           </p>
         </div>
       </header>

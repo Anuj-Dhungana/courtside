@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -91,18 +92,10 @@ export function SearchExperience() {
       >
         <label className="relative block">
           <span className="sr-only">Search teams, events and sports</span>
-          <svg
+          <Search
             aria-hidden="true"
-            viewBox="0 0 24 24"
             className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-600"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
+          />
           <input
             ref={inputRef}
             type="search"

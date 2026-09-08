@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Copy,
+  ExternalLink,
+  Info,
+  Moon,
+  Sun,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -92,11 +103,6 @@ export default function WatchPage() {
     }
   }, [params, fetchStreams]);
 
-  const openExternal = () => {
-    if (selectedStream) {
-      window.open(selectedStream.embedUrl, "_blank", "noopener,noreferrer");
-    }
-  };
 
   const copyShareLink = () => {
     if (typeof window !== "undefined") {
@@ -141,19 +147,7 @@ export default function WatchPage() {
                 href={`/events/${encodeURIComponent(params.eventId)}`}
                 className="group inline-flex items-center gap-1.5 rounded-lg border border-surface-700/80 bg-surface-900/80 px-3 py-1.5 text-xs font-semibold text-ink-300 transition-all hover:border-brand-500/50 hover:bg-surface-800 hover:text-white"
               >
-                <svg
-                  className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
                 <span>Back to Event</span>
               </Link>
             ) : (
@@ -162,7 +156,8 @@ export default function WatchPage() {
                 onClick={() => window.close()}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-surface-700/80 bg-surface-900/80 px-3 py-1.5 text-xs font-semibold text-ink-300 transition-all hover:bg-surface-800 hover:text-white"
               >
-                ✕ Close
+                <X className="h-3.5 w-3.5" />
+                <span>Close</span>
               </button>
             )}
 
@@ -221,7 +216,17 @@ export default function WatchPage() {
               }`}
               title="Toggle ambient background glow"
             >
-              <span>{ambientGlow ? "💡 Glow" : "🌙 Dim"}</span>
+              {ambientGlow ? (
+                <>
+                  <Sun className="h-3.5 w-3.5" />
+                  <span>Glow</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-3.5 w-3.5" />
+                  <span>Dim</span>
+                </>
+              )}
             </button>
 
             {selectedStream?.embedUrl ? (
@@ -233,19 +238,7 @@ export default function WatchPage() {
                 title="Open stream in a standalone tab"
               >
                 <span>Pop Out</span>
-                <svg
-                  className="h-3.5 w-3.5 text-ink-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
+                <ExternalLink className="h-3.5 w-3.5 text-ink-500" />
               </a>
             ) : null}
           </div>
@@ -394,9 +387,10 @@ export default function WatchPage() {
                       href={selectedStream.embedUrl}
                       target="_blank"
                       rel="noopener noreferrer nofollow"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
                     >
-                      <span>Open Source ↗</span>
+                      <span>Open Source</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   ) : null}
                 </div>
@@ -407,7 +401,7 @@ export default function WatchPage() {
               {/* Third-Party Safety Disclaimer */}
               <div className="rounded-xl border border-surface-700/60 bg-surface-900/50 p-4 text-xs text-ink-500">
                 <div className="flex items-start gap-2.5">
-                  <span className="mt-0.5 text-amber-400 text-sm font-bold">ⓘ</span>
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                   <p className="leading-relaxed">
                     <strong className="text-ink-300">Third-Party Stream Advisory:</strong> This video feed is hosted by external independent providers. CourtSide does not host, store, or license streaming media. Please consider watching through official broadcast partners when available.
                   </p>
@@ -462,9 +456,10 @@ export default function WatchPage() {
                 {params?.eventId && (
                   <Link
                     href={`/events/${encodeURIComponent(params.eventId)}`}
-                    className="mt-5 block w-full rounded-xl border border-surface-700 bg-surface-800 py-2.5 text-center text-xs font-semibold text-ink-100 transition hover:border-brand-500/40 hover:bg-surface-700"
+                    className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-surface-700 bg-surface-800 py-2.5 text-center text-xs font-semibold text-ink-100 transition hover:border-brand-500/40 hover:bg-surface-700"
                   >
-                    View Full Match Stats & Info →
+                    <span>View Full Match Stats & Info</span>
+                    <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
                   </Link>
                 )}
               </div>
@@ -521,7 +516,10 @@ export default function WatchPage() {
                             </span>
                           )}
                           {isCurrent && (
-                            <span className="text-xs text-brand-400 font-bold">✓ Active</span>
+                            <span className="inline-flex items-center gap-1 text-xs text-brand-400 font-bold">
+                              <Check className="h-3.5 w-3.5" />
+                              <span>Active</span>
+                            </span>
                           )}
                         </div>
                       </button>
@@ -533,9 +531,19 @@ export default function WatchPage() {
                   <button
                     type="button"
                     onClick={copyShareLink}
-                    className="w-full rounded-xl border border-surface-700 bg-surface-800 py-2.5 text-center text-xs font-semibold text-ink-300 transition hover:bg-surface-700 hover:text-white"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-surface-700 bg-surface-800 py-2.5 text-center text-xs font-semibold text-ink-300 transition hover:bg-surface-700 hover:text-white"
                   >
-                    {copied ? "✓ Link Copied to Clipboard!" : "📋 Copy Stream Link"}
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-brand-400" />
+                        <span className="text-brand-400">Link Copied to Clipboard!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Copy Stream Link</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

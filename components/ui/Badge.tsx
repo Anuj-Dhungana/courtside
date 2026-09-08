@@ -2,10 +2,16 @@ import type { ReactNode } from "react";
 
 const variants = {
   live: "bg-live-500/15 text-live-400 ring-live-500/30",
+  scheduled: "bg-sky-500/10 text-sky-300 ring-sky-500/25",
   upcoming: "bg-sky-500/10 text-sky-300 ring-sky-500/25",
+  delayed: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
+  postponed: "bg-purple-500/15 text-purple-300 ring-purple-500/30",
+  cancelled: "bg-rose-500/10 text-rose-300/80 ring-rose-500/25",
+  suspended: "bg-orange-500/15 text-orange-300 ring-orange-500/30",
   finished: "bg-surface-700/60 text-ink-500 ring-surface-600/60",
   neutral: "bg-surface-800 text-ink-300 ring-surface-600/60",
   brand: "bg-brand-500/10 text-brand-400 ring-brand-500/25",
+  unknown: "bg-surface-800 text-ink-500 ring-surface-700/60",
 } as const;
 
 export type BadgeVariant = keyof typeof variants;

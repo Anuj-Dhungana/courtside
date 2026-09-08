@@ -43,6 +43,9 @@ export const apiMatchSchema = z.object({
       }),
     )
     .catch([]),
+  status: z.string().nullish(),
+  state: z.string().nullish(),
+  period: z.string().nullish(),
 });
 export type ApiMatch = z.infer<typeof apiMatchSchema>;
 

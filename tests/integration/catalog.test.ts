@@ -152,4 +152,41 @@ describe("catalog service (mocked upstream)", () => {
     expect(isSafeExternalUrl("javascript:alert(1)")).toBe(false);
     expect(isSafeExternalUrl("http://plain.example.com")).toBe(false);
   });
+
+  it("never fabricates live status when the live feed is unavailable or empty", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/matches/live")) {
+          return new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.includes("/matches/all-today")) {
+          return new Response(
+            JSON.stringify([
+              {
+                id: "past-kickoff",
+                title: "Past Kickoff Match",
+                category: "football",
+                date: Date.now() - 30 * 60_000,
+                popular: false,
+                sources: [],
+              },
+            ]),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      }),
+    );
+
+    const { getTodayEvents } = await import("@/server/services/catalog");
+    const events = await getTodayEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0].status).not.toBe("live");
+    expect(events[0].status).toBe("delayed");
+  });
 });

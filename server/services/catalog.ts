@@ -125,10 +125,29 @@ function mergeLiveStatus(
   live: SportEvent[],
 ): SportEvent[] {
   if (live.length === 0) return events;
-  const liveIds = new Set(live.map((e) => e.id));
-  return events.map((e) =>
-    liveIds.has(e.id) ? { ...e, status: "live" as const } : e,
-  );
+  const liveMap = new Map(live.map((e) => [e.id, e]));
+  const existingIds = new Set<string>();
+
+  const merged = events.map((e) => {
+    existingIds.add(e.id);
+    const liveMatch = liveMap.get(e.id);
+    if (liveMatch) {
+      return {
+        ...e,
+        status: "live" as const,
+        sources: liveMatch.sources.length > 0 ? liveMatch.sources : e.sources,
+      };
+    }
+    return e;
+  });
+
+  for (const liveEvent of live) {
+    if (!existingIds.has(liveEvent.id)) {
+      merged.push(liveEvent);
+    }
+  }
+
+  return merged;
 }
 
 export async function getEventById(id: string): Promise<SportEvent | null> {

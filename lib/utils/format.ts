@@ -1,11 +1,12 @@
 import type { SportEvent } from "@/types";
 
-/** Format a ms timestamp as a short local time, e.g. "18:30". */
+/** Format a ms timestamp as a short local time, e.g. "6:30 PM". */
 export function formatTime(ms: number): string {
   if (!ms) return "TBD";
-  return new Date(ms).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
+  return new Date(ms).toLocaleTimeString("en-US", {
+    hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   });
 }
 

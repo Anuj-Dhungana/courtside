@@ -27,11 +27,19 @@ export default function HomePage() {
         </Suspense>
       </section>
 
-      {/* Live now */}
-      <section aria-labelledby="live-heading" className="mt-12">
-        <SectionHeading title="Live Now" eyebrow="Happening" href="/live" />
-        <Suspense fallback={<EventGridSkeleton count={3} />}>
-          <LiveSection />
+      {/* Popular Live */}
+      <section aria-labelledby="popular-heading" className="mt-12">
+        <SectionHeading title="Popular Live" eyebrow="Trending" href="/live" />
+        <Suspense fallback={<EventGridSkeleton count={6} />}>
+          <PopularSection />
+        </Suspense>
+      </section>
+
+      {/* Upcoming Popular */}
+      <section aria-labelledby="upcoming-popular-heading" className="mt-12">
+        <SectionHeading title="Upcoming Popular" eyebrow="Coming Up" />
+        <Suspense fallback={<EventGridSkeleton count={6} />}>
+          <UpcomingPopularSection />
         </Suspense>
       </section>
 
@@ -75,7 +83,9 @@ async function HeroSection() {
     const featured =
       live.find((e) => e.popular) ??
       live[0] ??
-      popular.find((e) => e.status === "upcoming") ??
+      popular.find(
+        (e) => e.status === "scheduled" || e.status === "upcoming",
+      ) ??
       popular[0];
     if (!featured) {
       return (
@@ -100,27 +110,61 @@ async function HeroSection() {
   }
 }
 
-async function LiveSection() {
+async function PopularSection() {
   try {
     const live = await getLiveEvents();
-    if (live.length === 0) {
+    const popularLive = live.filter((e) => e.popular);
+    if (popularLive.length === 0) {
       return (
         <EmptyState
-          title="No live events right now"
-          description="Check the schedule below — the next events are just around the corner."
+          title="No popular live events right now"
+          description="The most-watched matches will appear here when they go live."
         />
       );
     }
-    return <EventGrid events={live.slice(0, 6)} />;
+    return <EventGrid events={popularLive.slice(0, 6)} />;
   } catch {
-    return <ErrorState title="Unable to load live events" />;
+    return <ErrorState title="Unable to load popular live events" />;
+  }
+}
+
+async function UpcomingPopularSection() {
+  try {
+    const popular = await getPopularEvents();
+    const upcomingPopular = popular
+      .filter(
+        (e) =>
+          e.status === "scheduled" ||
+          e.status === "upcoming" ||
+          e.status === "delayed",
+      )
+      .slice(0, 6);
+
+    if (upcomingPopular.length === 0) {
+      return (
+        <EmptyState
+          title="No upcoming popular events scheduled"
+          description="Featured and trending upcoming matches will appear here."
+        />
+      );
+    }
+    return <EventGrid events={upcomingPopular} />;
+  } catch {
+    return <ErrorState title="Unable to load upcoming popular events" />;
   }
 }
 
 async function UpcomingSection() {
   try {
     const today = await getTodayEvents();
-    const upcoming = today.filter((e) => e.status === "upcoming").slice(0, 12);
+    const upcoming = today
+      .filter(
+        (e) =>
+          e.status === "scheduled" ||
+          e.status === "upcoming" ||
+          e.status === "delayed",
+      )
+      .slice(0, 12);
     if (upcoming.length === 0) {
       return (
         <EmptyState

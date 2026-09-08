@@ -6,7 +6,16 @@
  * so external schema quirks never leak into components.
  */
 
-export type EventStatus = "live" | "upcoming" | "finished";
+export type EventStatus =
+  | "live"
+  | "scheduled"
+  | "upcoming"
+  | "delayed"
+  | "postponed"
+  | "cancelled"
+  | "suspended"
+  | "finished"
+  | "unknown";
 
 export interface Sport {
   id: string;

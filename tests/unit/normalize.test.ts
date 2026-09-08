@@ -28,20 +28,61 @@ function makeMatch(overrides: Partial<ApiMatch> = {}): ApiMatch {
 }
 
 describe("deriveStatus", () => {
-  it("returns live when in the live feed regardless of time", () => {
+  it("returns live when in the authoritative live feed regardless of time", () => {
     expect(deriveStatus(NOW + 9_999_999, NOW, true)).toBe("live");
+    expect(deriveStatus(NOW - 1000, NOW, true)).toBe("live");
   });
-  it("returns upcoming for future events", () => {
-    expect(deriveStatus(NOW + 1000, NOW, false)).toBe("upcoming");
+
+  it("returns scheduled for future events", () => {
+    expect(deriveStatus(NOW + 1000, NOW, false)).toBe("scheduled");
+    expect(deriveStatus(NOW + 3_600_000, NOW, false)).toBe("scheduled");
   });
-  it("returns upcoming for unknown times", () => {
-    expect(deriveStatus(0, NOW, false)).toBe("upcoming");
+
+  it("returns unknown for missing or 0 timestamps", () => {
+    expect(deriveStatus(0, NOW, false)).toBe("unknown");
   });
-  it("returns live within the 4h window after start", () => {
-    expect(deriveStatus(NOW - 2 * 3_600_000, NOW, false)).toBe("live");
+
+  it("never returns live for past kickoff events outside the live feed, returning delayed instead", () => {
+    // Crucial reliability test: an event past kickoff NOT in the live feed must NOT be marked live
+    expect(deriveStatus(NOW - 30 * 60_000, NOW, false)).toBe("delayed");
+    expect(deriveStatus(NOW - 2 * 3_600_000, NOW, false)).toBe("delayed");
   });
-  it("returns finished after the live window", () => {
+
+  it("returns finished after the max event duration threshold", () => {
     expect(deriveStatus(NOW - 5 * 3_600_000, NOW, false)).toBe("finished");
+  });
+
+  it("detects postponed status from title or upstream metadata", () => {
+    expect(
+      deriveStatus(NOW - 1000, NOW, false, { title: "Team A vs Team B [Postponed]" }),
+    ).toBe("postponed");
+    expect(
+      deriveStatus(NOW + 1000, NOW, false, { upstreamStatus: "postponed" }),
+    ).toBe("postponed");
+  });
+
+  it("detects cancelled status from title or upstream metadata", () => {
+    expect(
+      deriveStatus(NOW, NOW, false, { title: "Team C vs Team D (Cancelled)" }),
+    ).toBe("cancelled");
+    expect(
+      deriveStatus(NOW, NOW, false, { title: "Team C vs Team D (Canceled)" }),
+    ).toBe("cancelled");
+    expect(
+      deriveStatus(NOW, NOW, false, { upstreamStatus: "cancelled" }),
+    ).toBe("cancelled");
+  });
+
+  it("detects delayed or suspended status from title or upstream metadata", () => {
+    expect(
+      deriveStatus(NOW + 1000, NOW, false, { title: "Match X [Delayed]" }),
+    ).toBe("delayed");
+    expect(
+      deriveStatus(NOW, NOW, false, { title: "Match Y [Suspended]" }),
+    ).toBe("suspended");
+    expect(
+      deriveStatus(NOW, NOW, false, { upstreamStatus: "suspended" }),
+    ).toBe("suspended");
   });
 });
 
@@ -51,7 +92,7 @@ describe("normalizeMatch", () => {
     expect(event.title).toBe("A vs B");
     expect(event.home?.badgeUrl).toBe("/api/img/badge/badge-a");
     expect(event.away?.badgeUrl).toBeNull();
-    expect(event.status).toBe("upcoming");
+    expect(event.status).toBe("scheduled");
   });
 
   it("normalizes poster paths from full proxy form", () => {

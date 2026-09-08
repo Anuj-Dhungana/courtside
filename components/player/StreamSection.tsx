@@ -1,5 +1,6 @@
 "use client";
 
+import { Play } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
@@ -175,7 +176,7 @@ export function StreamSection({
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-ink-100">
-                      {s.language} · Source "{s.source}"
+                      {s.language} · Source &ldquo;{s.source}&rdquo;
                     </p>
                     <p className="text-xs text-ink-600">
                       Opens CourtSide watch page · third-party redirect
@@ -185,14 +186,7 @@ export function StreamSection({
                 <div className="flex shrink-0 items-center gap-2">
                   {s.hd ? <Badge variant="brand">HD</Badge> : null}
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 ring-1 ring-brand-500/20 transition-all group-hover:bg-brand-500/20 group-hover:ring-brand-500/40">
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="currentColor"
-                    >
-                      <path d="M8 5.14v14l11-7-11-7z" />
-                    </svg>
+                    <Play aria-hidden="true" className="h-4 w-4 fill-current ml-0.5" />
                   </span>
                 </div>
               </a>

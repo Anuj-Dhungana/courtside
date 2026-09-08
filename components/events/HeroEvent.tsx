@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { Badge, LiveBadge } from "@/components/ui/Badge";
@@ -19,6 +20,10 @@ export function HeroEvent({ event }: { event: SportEvent }) {
       <div className="mb-6 flex items-center gap-3">
         {event.status === "live" ? (
           <LiveBadge />
+        ) : event.status === "delayed" ? (
+          <Badge variant="delayed">Delayed</Badge>
+        ) : event.status === "finished" ? (
+          <Badge variant="finished">Finished</Badge>
         ) : (
           <Badge variant="brand">Featured</Badge>
         )}
@@ -45,8 +50,9 @@ export function HeroEvent({ event }: { event: SportEvent }) {
 
       <p className="mt-6 text-center text-sm text-ink-500">
         {formatDateTime(event.startTime)}
-        <span className="ml-2 font-medium text-brand-400 opacity-0 transition-opacity group-hover:opacity-100">
-          View event →
+        <span className="ml-2 inline-flex items-center gap-1 font-medium text-brand-400 opacity-0 transition-opacity group-hover:opacity-100">
+          <span>View event</span>
+          <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
         </span>
       </p>
     </Link>

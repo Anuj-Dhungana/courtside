@@ -38,7 +38,12 @@ export default async function SportPage({ params }: Props) {
   const events = await getSportEvents(sportId).catch(() => []);
 
   const live = events.filter((e) => e.status === "live");
-  const upcoming = events.filter((e) => e.status === "upcoming");
+  const upcoming = events.filter(
+    (e) =>
+      e.status === "scheduled" ||
+      e.status === "upcoming" ||
+      e.status === "delayed",
+  );
   const finished = events.filter((e) => e.status === "finished").slice(0, 9);
 
   return (

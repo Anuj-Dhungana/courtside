@@ -73,6 +73,9 @@ function memoryGet<T>(key: string): Entry<T> | null {
     memory.delete(key);
     return null;
   }
+  // Refresh position to maintain LRU eviction semantics
+  memory.delete(key);
+  memory.set(key, e as Entry<unknown>);
   return e;
 }
 
@@ -178,6 +181,22 @@ export async function getOrSet<T>(
   const p = doFetch().finally(() => inflight.delete(key));
   inflight.set(key, p as Promise<unknown>);
   return p;
+}
+
+/** Inspect cache health and connection state for /api/health. */
+export async function getCacheHealth(): Promise<{
+  mode: "redis" | "memory";
+  redisConnected: boolean;
+  memoryEntries: number;
+  inflightCount: number;
+}> {
+  const r = await getRedis();
+  return {
+    mode: r ? "redis" : "memory",
+    redisConnected: Boolean(r),
+    memoryEntries: memory.size,
+    inflightCount: inflight.size,
+  };
 }
 
 /** Expose for tests. */

@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -29,10 +30,13 @@ export function SectionHeading({
       {href ? (
         <Link
           href={href}
-          className="shrink-0 text-sm font-medium text-brand-400 transition-colors hover:text-brand-500"
+          className="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-400 transition-colors hover:text-brand-300"
         >
-          {linkLabel}
-          <span aria-hidden="true"> →</span>
+          <span>{linkLabel}</span>
+          <ArrowRight
+            aria-hidden="true"
+            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+          />
         </Link>
       ) : null}
       {children}
