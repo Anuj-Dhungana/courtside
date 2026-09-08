@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   formatDate,
@@ -14,19 +14,31 @@ interface TimeProps {
   ms: number;
   className?: string;
   fallback?: string;
+  serverTimezone?: string;
 }
 
 /**
  * Formats a kickoff timestamp in the user's local browser timezone.
- * On server render, falls back to standard format with suppressHydrationWarning.
- * On client mount, instantly reflects the browser's exact timezone (e.g. 12:30 AM for Nepal).
+ * Uses both state and a direct DOM ref to guarantee that the text is
+ * forcefully and immediately updated to the local browser timezone on mount,
+ * bypassing React's suppressHydrationWarning text-diffing bailout.
  */
-export function ClientTime({ ms, className, fallback }: TimeProps) {
+export function ClientTime({
+  ms,
+  className,
+  fallback,
+  serverTimezone,
+}: TimeProps) {
+  const ref = useRef<HTMLTimeElement>(null);
   const [formatted, setFormatted] = useState<string | null>(null);
 
   useEffect(() => {
     if (ms) {
-      setFormatted(formatTime(ms));
+      const local = formatTime(ms);
+      setFormatted(local);
+      if (ref.current) {
+        ref.current.textContent = local;
+      }
     }
   }, [ms]);
 
@@ -36,11 +48,13 @@ export function ClientTime({ ms, className, fallback }: TimeProps) {
 
   return (
     <time
+      ref={ref}
       dateTime={new Date(ms).toISOString()}
       className={className}
       suppressHydrationWarning
     >
-      {formatted ?? formatTime(ms)}
+      {formatted ??
+        (serverTimezone ? formatTime(ms, serverTimezone) : formatTime(ms))}
     </time>
   );
 }
@@ -48,12 +62,22 @@ export function ClientTime({ ms, className, fallback }: TimeProps) {
 /**
  * Formats a date timestamp in the user's local browser timezone.
  */
-export function ClientDate({ ms, className, fallback }: TimeProps) {
+export function ClientDate({
+  ms,
+  className,
+  fallback,
+  serverTimezone,
+}: TimeProps) {
+  const ref = useRef<HTMLTimeElement>(null);
   const [formatted, setFormatted] = useState<string | null>(null);
 
   useEffect(() => {
     if (ms) {
-      setFormatted(formatDate(ms));
+      const local = formatDate(ms);
+      setFormatted(local);
+      if (ref.current) {
+        ref.current.textContent = local;
+      }
     }
   }, [ms]);
 
@@ -63,11 +87,13 @@ export function ClientDate({ ms, className, fallback }: TimeProps) {
 
   return (
     <time
+      ref={ref}
       dateTime={new Date(ms).toISOString()}
       className={className}
       suppressHydrationWarning
     >
-      {formatted ?? formatDate(ms)}
+      {formatted ??
+        (serverTimezone ? formatDate(ms, serverTimezone) : formatDate(ms))}
     </time>
   );
 }
@@ -75,12 +101,22 @@ export function ClientDate({ ms, className, fallback }: TimeProps) {
 /**
  * Formats full date and time in the user's local browser timezone.
  */
-export function ClientDateTime({ ms, className, fallback }: TimeProps) {
+export function ClientDateTime({
+  ms,
+  className,
+  fallback,
+  serverTimezone,
+}: TimeProps) {
+  const ref = useRef<HTMLTimeElement>(null);
   const [formatted, setFormatted] = useState<string | null>(null);
 
   useEffect(() => {
     if (ms) {
-      setFormatted(formatDateTime(ms));
+      const local = formatDateTime(ms);
+      setFormatted(local);
+      if (ref.current) {
+        ref.current.textContent = local;
+      }
     }
   }, [ms]);
 
@@ -90,11 +126,15 @@ export function ClientDateTime({ ms, className, fallback }: TimeProps) {
 
   return (
     <time
+      ref={ref}
       dateTime={new Date(ms).toISOString()}
       className={className}
       suppressHydrationWarning
     >
-      {formatted ?? formatDateTime(ms)}
+      {formatted ??
+        (serverTimezone
+          ? formatDateTime(ms, serverTimezone)
+          : formatDateTime(ms))}
     </time>
   );
 }
@@ -109,19 +149,25 @@ export function ClientCountdown({
   ms: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLSpanElement>(null);
   const [text, setText] = useState<string>(() => relativeLabel(ms));
 
   useEffect(() => {
     if (!ms) return;
-    setText(relativeLabel(ms));
-    const interval = setInterval(() => {
-      setText(relativeLabel(ms));
-    }, 30_000);
+    const update = () => {
+      const label = relativeLabel(ms);
+      setText(label);
+      if (ref.current) {
+        ref.current.textContent = label;
+      }
+    };
+    update();
+    const interval = setInterval(update, 30_000);
     return () => clearInterval(interval);
   }, [ms]);
 
   return (
-    <span className={className} suppressHydrationWarning>
+    <span ref={ref} className={className} suppressHydrationWarning>
       {text}
     </span>
   );
@@ -137,19 +183,25 @@ export function ClientElapsed({
   startTime: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLSpanElement>(null);
   const [text, setText] = useState<string>(() => getLiveElapsed(startTime));
 
   useEffect(() => {
     if (!startTime) return;
-    setText(getLiveElapsed(startTime));
-    const interval = setInterval(() => {
-      setText(getLiveElapsed(startTime));
-    }, 60_000);
+    const update = () => {
+      const label = getLiveElapsed(startTime);
+      setText(label);
+      if (ref.current) {
+        ref.current.textContent = label;
+      }
+    };
+    update();
+    const interval = setInterval(update, 60_000);
     return () => clearInterval(interval);
   }, [startTime]);
 
   return (
-    <span className={className} suppressHydrationWarning>
+    <span ref={ref} className={className} suppressHydrationWarning>
       {text}
     </span>
   );
@@ -178,24 +230,31 @@ export function ClientTimeCaption({
   event: SportEvent;
   className?: string;
 }) {
+  const ref = useRef<HTMLParagraphElement>(null);
   const [caption, setCaption] = useState<string>(() => getTimeCaption(event));
 
   useEffect(() => {
-    setCaption(getTimeCaption(event));
+    const update = () => {
+      const text = getTimeCaption(event);
+      setCaption(text);
+      if (ref.current) {
+        ref.current.textContent = text;
+      }
+    };
+    update();
     if (
       event.status === "live" ||
       event.status === "scheduled" ||
       event.status === "upcoming"
     ) {
-      const interval = setInterval(() => {
-        setCaption(getTimeCaption(event));
-      }, 30_000);
+      const interval = setInterval(update, 30_000);
       return () => clearInterval(interval);
     }
   }, [event]);
 
   return (
     <p
+      ref={ref}
       className={className ?? "mt-3.5 text-xs text-ink-600"}
       suppressHydrationWarning
     >

@@ -10,9 +10,11 @@ import type { SportEvent } from "@/types";
 export function UpcomingScheduleSection({
   todayEvents,
   tomorrowEvents,
+  serverTimezone,
 }: {
   todayEvents: SportEvent[];
   tomorrowEvents: SportEvent[];
+  serverTimezone?: string;
 }) {
   const [tab, setTab] = useState<"today" | "tomorrow">("today");
 
@@ -70,7 +72,11 @@ export function UpcomingScheduleSection({
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {events.slice(0, 8).map((event) => (
-            <UpcomingFixtureCard key={event.id} event={event} />
+            <UpcomingFixtureCard
+              key={event.id}
+              event={event}
+              serverTimezone={serverTimezone}
+            />
           ))}
         </div>
       )}

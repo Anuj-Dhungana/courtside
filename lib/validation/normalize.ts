@@ -161,8 +161,12 @@ export function sortEvents(
       const bt = b.startTime || Number.MAX_SAFE_INTEGER;
       return at - bt;
     }
-    // live: popular first, then by recency of start
+    // live: popular first, real fixtures with teams before 24/7 channels, then by recency of start
     if (a.status === "live") {
+      const aHasTeams = Boolean(a.home && a.away);
+      const bHasTeams = Boolean(b.home && b.away);
+      if (aHasTeams !== bHasTeams) return aHasTeams ? -1 : 1;
+
       if (a.popular !== b.popular) return a.popular ? -1 : 1;
       return Math.abs(now - a.startTime) - Math.abs(now - b.startTime);
     }

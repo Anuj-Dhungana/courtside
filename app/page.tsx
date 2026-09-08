@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 
 import { PopularLiveCard } from "@/components/events/PopularLiveCard";
@@ -14,8 +15,37 @@ import {
   getSportsWithCounts,
   getTodayEvents,
 } from "@/server/services/catalog";
+import type { SportEvent } from "@/types";
 
 export const revalidate = 30;
+
+async function getServerTimezone(): Promise<string | undefined> {
+  try {
+    const cookieStore = await cookies();
+    const tz = cookieStore.get("user-tz")?.value;
+    return tz ? decodeURIComponent(tz) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function deduplicateEvents(events: SportEvent[]): SportEvent[] {
+  const seen = new Set<string>();
+  const result: SportEvent[] = [];
+
+  for (const e of events) {
+    const key =
+      e.home && e.away
+        ? `${e.sportId}:${e.home.name.toLowerCase().replace(/[^a-z0-9]/g, "")}:${e.away.name.toLowerCase().replace(/[^a-z0-9]/g, "")}`
+        : `${e.sportId}:${e.title.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(e);
+    }
+  }
+  return result;
+}
 
 export default function HomePage() {
   return (
@@ -98,7 +128,9 @@ async function PopularSection() {
   try {
     const live = await getLiveEvents();
     const popularLive = live.filter((e) => e.popular);
-    const displayEvents = popularLive.length > 0 ? popularLive : live;
+    const displayEvents = deduplicateEvents(
+      popularLive.length > 0 ? popularLive : live,
+    );
 
     if (displayEvents.length === 0) {
       return (
@@ -123,15 +155,21 @@ async function PopularSection() {
 
 async function UpcomingPopularSection() {
   try {
-    const popular = await getPopularEvents();
-    const upcomingPopular = popular
-      .filter(
+    const [popular, userTz] = await Promise.all([
+      getPopularEvents(),
+      getServerTimezone(),
+    ]);
+
+    const now = Date.now();
+    const upcomingPopular = deduplicateEvents(
+      popular.filter(
         (e) =>
-          e.status === "scheduled" ||
-          e.status === "upcoming" ||
-          e.status === "delayed",
-      )
-      .slice(0, 6);
+          (e.status === "scheduled" ||
+            e.status === "upcoming" ||
+            e.status === "delayed") &&
+          (e.startTime === 0 || e.startTime > now - 10 * 60 * 1000),
+      ),
+    ).slice(0, 6);
 
     if (upcomingPopular.length === 0) {
       return (
@@ -145,7 +183,11 @@ async function UpcomingPopularSection() {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {upcomingPopular.map((e) => (
-          <UpcomingFixtureCard key={e.id} event={e} />
+          <UpcomingFixtureCard
+            key={e.id}
+            event={e}
+            serverTimezone={userTz}
+          />
         ))}
       </div>
     );
@@ -156,52 +198,60 @@ async function UpcomingPopularSection() {
 
 async function UpcomingSection() {
   try {
-    const [today, all] = await Promise.all([
+    const [today, all, userTz] = await Promise.all([
       getTodayEvents().catch(() => []),
       getAllEvents().catch(() => []),
+      getServerTimezone(),
     ]);
 
-    const todayUpcoming = today.filter(
-      (e) =>
-        e.status === "scheduled" ||
-        e.status === "upcoming" ||
-        e.status === "delayed",
+    const now = Date.now();
+    const todayUpcoming = deduplicateEvents(
+      today.filter(
+        (e) =>
+          (e.status === "scheduled" ||
+            e.status === "upcoming" ||
+            e.status === "delayed") &&
+          (e.startTime === 0 || e.startTime > now - 10 * 60 * 1000),
+      ),
     );
 
     // Calculate tomorrow date window
-    const now = new Date();
-    const startOfTomorrow = new Date(now);
+    const nowDate = new Date();
+    const startOfTomorrow = new Date(nowDate);
     startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
     startOfTomorrow.setHours(0, 0, 0, 0);
 
-    const endOfTomorrow = new Date(now);
+    const endOfTomorrow = new Date(nowDate);
     endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
     endOfTomorrow.setHours(23, 59, 59, 999);
 
-    const tomorrowUpcoming = all.filter(
-      (e) =>
-        e.startTime >= startOfTomorrow.getTime() &&
-        e.startTime <= endOfTomorrow.getTime() &&
-        e.status !== "finished",
+    const tomorrowUpcoming = deduplicateEvents(
+      all.filter(
+        (e) =>
+          e.startTime >= startOfTomorrow.getTime() &&
+          e.startTime <= endOfTomorrow.getTime() &&
+          e.status !== "finished",
+      ),
     );
 
     // Fallback for tomorrow if empty (e.g. later matches from all feed)
     const fallbackTomorrow =
       tomorrowUpcoming.length > 0
         ? tomorrowUpcoming
-        : all
-            .filter(
+        : deduplicateEvents(
+            all.filter(
               (e) =>
                 e.startTime > Date.now() &&
                 e.status !== "finished" &&
                 !todayUpcoming.some((t) => t.id === e.id),
-            )
-            .slice(0, 8);
+            ),
+          ).slice(0, 8);
 
     return (
       <UpcomingScheduleSection
         todayEvents={todayUpcoming}
         tomorrowEvents={fallbackTomorrow}
+        serverTimezone={userTz}
       />
     );
   } catch {

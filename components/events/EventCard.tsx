@@ -9,7 +9,13 @@ import type { SportEvent } from "@/types";
 /**
  * Primary event card. Server component with localized client time formatting.
  */
-export function EventCard({ event }: { event: SportEvent }) {
+export function EventCard({
+  event,
+  serverTimezone,
+}: {
+  event: SportEvent;
+  serverTimezone?: string;
+}) {
   const hasTeams = Boolean(event.home && event.away);
 
   return (
@@ -37,7 +43,7 @@ export function EventCard({ event }: { event: SportEvent }) {
           <Badge variant="unknown">TBD</Badge>
         ) : (
           <Badge variant="upcoming">
-            <ClientTime ms={event.startTime} />
+            <ClientTime ms={event.startTime} serverTimezone={serverTimezone} />
           </Badge>
         )}
       </div>

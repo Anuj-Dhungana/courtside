@@ -6,7 +6,13 @@ import { ClientCountdown, ClientTime } from "@/components/ui/ClientTime";
 import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
 
-export function UpcomingFixtureCard({ event }: { event: SportEvent }) {
+export function UpcomingFixtureCard({
+  event,
+  serverTimezone,
+}: {
+  event: SportEvent;
+  serverTimezone?: string;
+}) {
   const hasTeams = Boolean(event.home && event.away);
 
   // Extract a league/tournament label or fallback to sport label
@@ -24,7 +30,7 @@ export function UpcomingFixtureCard({ event }: { event: SportEvent }) {
             {leagueLabel}
           </span>
           <span className="shrink-0 rounded-md bg-surface-800/90 px-2 py-0.5 text-[10px] font-bold text-ink-200 ring-1 ring-surface-700/60">
-            <ClientTime ms={event.startTime} />
+            <ClientTime ms={event.startTime} serverTimezone={serverTimezone} />
           </span>
         </div>
 
