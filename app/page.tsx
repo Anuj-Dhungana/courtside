@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { EventGrid } from "@/components/events/EventGrid";
-import { HeroEvent } from "@/components/events/HeroEvent";
 import { SportCard } from "@/components/sports/SportCard";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -20,15 +19,8 @@ export const revalidate = 30;
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-      {/* Hero */}
-      <section aria-label="Featured event">
-        <Suspense fallback={<Skeleton className="h-64 rounded-2xl sm:h-72" />}>
-          <HeroSection />
-        </Suspense>
-      </section>
-
       {/* Popular Live */}
-      <section aria-labelledby="popular-heading" className="mt-12">
+      <section aria-labelledby="popular-heading">
         <SectionHeading title="Popular Live" eyebrow="Trending" href="/live" />
         <Suspense fallback={<EventGridSkeleton count={6} />}>
           <PopularSection />
@@ -72,42 +64,6 @@ export default function HomePage() {
       </section>
     </div>
   );
-}
-
-async function HeroSection() {
-  try {
-    const [popular, live] = await Promise.all([
-      getPopularEvents().catch(() => []),
-      getLiveEvents().catch(() => []),
-    ]);
-    const featured =
-      live.find((e) => e.popular) ??
-      live[0] ??
-      popular.find(
-        (e) => e.status === "scheduled" || e.status === "upcoming",
-      ) ??
-      popular[0];
-    if (!featured) {
-      return (
-        <div className="rounded-2xl border border-surface-700/60 bg-gradient-to-br from-surface-850 to-surface-950 p-10 text-center">
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Every match. <span className="text-brand-400">One place.</span>
-          </h1>
-          <p className="mx-auto mt-3 max-w-md text-ink-500">
-            Live scores, schedules and event details across the world of sport.
-          </p>
-        </div>
-      );
-    }
-    return <HeroEvent event={featured} />;
-  } catch {
-    return (
-      <ErrorState
-        title="Unable to load today's events"
-        description="Event data is temporarily unavailable. Please refresh in a moment."
-      />
-    );
-  }
 }
 
 async function PopularSection() {

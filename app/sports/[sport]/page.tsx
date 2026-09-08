@@ -5,7 +5,6 @@ import { EventGrid } from "@/components/events/EventGrid";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { groupEventsByDay, sportLabel } from "@/lib/utils/format";
-import { sportMeta } from "@/lib/utils/sport-meta";
 import { getSportEvents, getSports } from "@/server/services/catalog";
 
 export const revalidate = 60;
@@ -34,7 +33,6 @@ export default async function SportPage({ params }: Props) {
   if (sports.length > 0 && !sport) notFound();
 
   const label = sport?.name ?? sportLabel(sportId);
-  const meta = sportMeta(sportId);
   const events = await getSportEvents(sportId).catch(() => []);
 
   const live = events.filter((e) => e.status === "live");
@@ -48,33 +46,10 @@ export default async function SportPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-10 flex items-center gap-4">
-        <span
-          aria-hidden="true"
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.accent} ring-1 ring-surface-600/60`}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-7 w-7 text-ink-100"
-            fill="currentColor"
-          >
-            <path d={meta.icon} />
-          </svg>
-        </span>
-        <div>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            {label}
-          </h1>
-          <p className="mt-1 text-sm text-ink-500">
-            {live.length > 0
-              ? `${live.length} live · ${upcoming.length} upcoming`
-              : `${upcoming.length} upcoming event${upcoming.length === 1 ? "" : "s"}`}
-          </p>
-        </div>
-      </header>
+      <h1 className="sr-only">{label}</h1>
 
       <section aria-label={`Live ${label} events`} className="mb-12">
-        <SectionHeading title="Live" eyebrow="Now" />
+        <SectionHeading title={`${label} Live`} eyebrow="Now" />
         {live.length === 0 ? (
           <EmptyState
             title={`No live ${label.toLowerCase()} right now`}

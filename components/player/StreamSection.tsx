@@ -1,6 +1,7 @@
 "use client";
 
 import { Play } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
@@ -154,7 +155,7 @@ export function StreamSection({
         <ul className="space-y-2">
           {streams!.map((s) => (
             <li key={`${s.source}-${s.id}-${s.streamNo}`}>
-              <a
+              <Link
                 href={watchUrl(s, {
                   eventTitle,
                   eventId,
@@ -162,10 +163,8 @@ export function StreamSection({
                   homeTeam,
                   awayTeam,
                 })}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
                 className="group flex items-center justify-between gap-4 rounded-xl border border-surface-700/60 bg-surface-900 p-4 transition-all hover:border-brand-500/40 hover:bg-surface-850 hover:shadow-[0_0_20px_rgba(16,185,129,.08)]"
-                aria-label={`Open stream ${s.streamNo} in ${s.language} for ${eventTitle} via CourtSide watch page (opens in a new tab)`}
+                aria-label={`Open stream ${s.streamNo} in ${s.language} for ${eventTitle} via CourtSide watch page`}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
@@ -179,7 +178,7 @@ export function StreamSection({
                       {s.language} · Source &ldquo;{s.source}&rdquo;
                     </p>
                     <p className="text-xs text-ink-600">
-                      Opens CourtSide watch page · third-party redirect
+                      CourtSide watch page · third-party redirect
                     </p>
                   </div>
                 </div>
@@ -189,7 +188,7 @@ export function StreamSection({
                     <Play aria-hidden="true" className="h-4 w-4 fill-current ml-0.5" />
                   </span>
                 </div>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

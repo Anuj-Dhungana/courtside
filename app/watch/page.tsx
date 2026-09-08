@@ -9,7 +9,6 @@ import {
   Info,
   Moon,
   Sun,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -153,11 +152,17 @@ export default function WatchPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => window.close()}
+                onClick={() => {
+                  if (typeof window !== "undefined" && window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    window.location.assign("/");
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-surface-700/80 bg-surface-900/80 px-3 py-1.5 text-xs font-semibold text-ink-300 transition-all hover:bg-surface-800 hover:text-white"
               >
-                <X className="h-3.5 w-3.5" />
-                <span>Close</span>
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Back</span>
               </button>
             )}
 
