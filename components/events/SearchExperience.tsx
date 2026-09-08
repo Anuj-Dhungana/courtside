@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EventCard } from "@/components/events/EventCard";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { EventGridSkeleton } from "@/components/ui/Skeleton";
-import { sportMeta } from "@/lib/utils/sport-meta";
+import { SportIcon } from "@/components/sports/SportIcon";
 import type { SearchResults } from "@/types";
 
 const DEBOUNCE_MS = 350;
@@ -136,27 +136,17 @@ export function SearchExperience() {
                   Sports
                 </h2>
                 <ul className="flex flex-wrap gap-3">
-                  {results.sports.map((s) => {
-                    const meta = sportMeta(s.id);
-                    return (
-                      <li key={s.id}>
-                        <Link
-                          href={`/sports/${encodeURIComponent(s.id)}`}
-                          className="flex items-center gap-2.5 rounded-xl border border-surface-700/60 bg-surface-900 px-4 py-2.5 text-sm font-semibold text-ink-100 transition-colors hover:border-surface-600 hover:bg-surface-850"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                            className="h-4.5 w-4.5 text-brand-400"
-                            fill="currentColor"
-                          >
-                            <path d={meta.icon} />
-                          </svg>
-                          {s.name}
-                        </Link>
-                      </li>
-                    );
-                  })}
+                  {results.sports.map((s) => (
+                    <li key={s.id}>
+                      <Link
+                        href={`/sports/${encodeURIComponent(s.id)}`}
+                        className="flex items-center gap-2.5 rounded-xl border border-surface-700/60 bg-surface-900 px-4 py-2.5 text-sm font-semibold text-ink-100 transition-colors hover:border-surface-600 hover:bg-surface-850"
+                      >
+                        <SportIcon sportId={s.id} className="h-4 w-4 text-brand-400" />
+                        {s.name}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </section>
             ) : null}
