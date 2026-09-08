@@ -17,6 +17,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^6.0.0",
     "lucide-react": "^1.42.0",
