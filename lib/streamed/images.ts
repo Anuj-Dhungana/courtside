@@ -49,3 +49,34 @@ export function upstreamImageUrl(
   if (kind === "badge") return `${base}/images/badge/${id}.webp`;
   return `${base}/images/proxy/${id}.webp`;
 }
+
+/**
+ * Internal URL for a match poster constructed from two team badge ids.
+ * Streamed.pk generates these posters via /api/images/poster/[badge1]/[badge2].webp.
+ */
+export function matchPosterUrl(
+  homeBadge: string | null | undefined,
+  awayBadge: string | null | undefined,
+): string | null {
+  if (!homeBadge || !awayBadge) return null;
+  let h = homeBadge;
+  let a = awayBadge;
+  const badgePrefix = "/api/images/badge/";
+  if (h.startsWith(badgePrefix)) h = h.slice(badgePrefix.length);
+  if (h.endsWith(".webp")) h = h.slice(0, -".webp".length);
+  if (a.startsWith(badgePrefix)) a = a.slice(badgePrefix.length);
+  if (a.endsWith(".webp")) a = a.slice(0, -".webp".length);
+  if (!isSafeImageId(h) || !isSafeImageId(a)) return null;
+  return `/api/img/poster/${encodeURIComponent(h)}/${encodeURIComponent(a)}`;
+}
+
+/** Upstream URL for a composite match poster (server-side only). */
+export function upstreamMatchPosterUrl(
+  homeBadge: string,
+  awayBadge: string,
+  base: string,
+): string | null {
+  if (!isSafeImageId(homeBadge) || !isSafeImageId(awayBadge)) return null;
+  return `${base}/images/poster/${homeBadge}/${awayBadge}.webp`;
+}
+

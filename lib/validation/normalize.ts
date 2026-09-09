@@ -1,5 +1,5 @@
 import type { ApiMatch, ApiSport, ApiStream } from "@/lib/streamed/types";
-import { badgeUrl, posterUrl } from "@/lib/streamed/images";
+import { badgeUrl, matchPosterUrl, posterUrl } from "@/lib/streamed/images";
 import type { EventStatus, Sport, SportEvent, StreamOption } from "@/types";
 
 /**
@@ -101,7 +101,9 @@ export function normalizeMatch(
     title,
     sportId: raw.category,
     startTime: raw.date,
-    posterUrl: posterUrl(raw.poster ?? null),
+    posterUrl:
+      posterUrl(raw.poster ?? null) ??
+      matchPosterUrl(raw.teams?.home?.badge, raw.teams?.away?.badge),
     popular: raw.popular,
     home: raw.teams?.home
       ? {

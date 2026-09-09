@@ -12,6 +12,8 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { TeamBadge } from "@/components/ui/TeamBadge";
+
 interface StreamOption {
   id: string;
   streamNo: number;
@@ -30,6 +32,8 @@ interface MatchMeta {
   sport?: string;
   home?: string;
   away?: string;
+  homeBadge?: string;
+  awayBadge?: string;
 }
 
 export default function WatchPage() {
@@ -54,13 +58,26 @@ export default function WatchPage() {
     const sport = sp.get("sport") ?? undefined;
     const home = sp.get("home") ?? undefined;
     const away = sp.get("away") ?? undefined;
+    const homeBadge = sp.get("homeBadge") ?? undefined;
+    const awayBadge = sp.get("awayBadge") ?? undefined;
 
     if (!source && !id && !eventId) {
       setState("error");
       return;
     }
 
-    setParams({ source, id, streamNo, title, eventId, sport, home, away });
+    setParams({
+      source,
+      id,
+      streamNo,
+      title,
+      eventId,
+      sport,
+      home,
+      away,
+      homeBadge,
+      awayBadge,
+    });
   }, []);
 
   // Fetch streams with automatic multi-source fallback
@@ -85,9 +102,9 @@ export default function WatchPage() {
         }
       }
 
-      // 2. If no streams found, or no source specified, check the event's full source list
+      // 2. Fetch event metadata to guarantee team names and club badges are loaded
       const targetEventId = p.eventId || (p.source ? undefined : p.id);
-      if (candidateStreams.length === 0 && targetEventId) {
+      if (targetEventId && (!p.homeBadge || !p.awayBadge || !p.home || !p.away || candidateStreams.length === 0)) {
         try {
           const evRes = await fetch(
             `/api/events/${encodeURIComponent(targetEventId)}`,
@@ -98,8 +115,8 @@ export default function WatchPage() {
               event?: {
                 title?: string;
                 sportId?: string;
-                home?: { name: string };
-                away?: { name: string };
+                home?: { name: string; badgeUrl?: string | null };
+                away?: { name: string; badgeUrl?: string | null };
                 sources?: Array<{ source: string; id: string }>;
               };
             };
@@ -117,37 +134,41 @@ export default function WatchPage() {
                 sport: prev?.sport || ev.sportId,
                 home: prev?.home || ev.home?.name,
                 away: prev?.away || ev.away?.name,
+                homeBadge: prev?.homeBadge || ev.home?.badgeUrl || undefined,
+                awayBadge: prev?.awayBadge || ev.away?.badgeUrl || undefined,
               }));
 
-              const otherSources = (ev.sources ?? []).filter(
-                (s) => !(s.source === p.source && s.id === p.id),
-              );
-
-              if (otherSources.length > 0) {
-                const results = await Promise.allSettled(
-                  otherSources.slice(0, 5).map(async (s) => {
-                    const r = await fetch(
-                      `/api/streams/${encodeURIComponent(s.source)}/${encodeURIComponent(s.id)}`,
-                      { cache: "no-store" },
-                    );
-                    if (!r.ok) return [];
-                    const d = (await r.json()) as { streams?: StreamOption[] };
-                    return d.streams ?? [];
-                  }),
+              if (candidateStreams.length === 0) {
+                const otherSources = (ev.sources ?? []).filter(
+                  (s) => !(s.source === p.source && s.id === p.id),
                 );
-                const fetched = results
-                  .filter(
-                    (r): r is PromiseFulfilledResult<StreamOption[]> =>
-                      r.status === "fulfilled",
-                  )
-                  .flatMap((r) => r.value);
 
-                candidateStreams = [...candidateStreams, ...fetched];
+                if (otherSources.length > 0) {
+                  const results = await Promise.allSettled(
+                    otherSources.slice(0, 5).map(async (s) => {
+                      const r = await fetch(
+                        `/api/streams/${encodeURIComponent(s.source)}/${encodeURIComponent(s.id)}`,
+                        { cache: "no-store" },
+                      );
+                      if (!r.ok) return [];
+                      const d = (await r.json()) as { streams?: StreamOption[] };
+                      return d.streams ?? [];
+                    }),
+                  );
+                  const fetched = results
+                    .filter(
+                      (r): r is PromiseFulfilledResult<StreamOption[]> =>
+                        r.status === "fulfilled",
+                    )
+                    .flatMap((r) => r.value);
+
+                  candidateStreams = [...candidateStreams, ...fetched];
+                }
               }
             }
           }
         } catch {
-          // fallback failed
+          // ignore, fallback handling continues
         }
       }
 
@@ -199,8 +220,15 @@ export default function WatchPage() {
   };
 
   const title = params?.title ?? "Live Sports Event";
-  const home = params?.home;
-  const away = params?.away;
+  let home = params?.home;
+  let away = params?.away;
+  if (!home && !away && title.includes(" vs ")) {
+    const parts = title.split(" vs ").map((s) => s.trim());
+    if (parts.length === 2) {
+      home = parts[0];
+      away = parts[1];
+    }
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-[#07090f] font-sans text-slate-100 antialiased">
@@ -449,15 +477,48 @@ export default function WatchPage() {
 
                 <div className="mt-4 space-y-3 text-xs">
                   {home && away && (
-                    <div className="flex items-center justify-between rounded-xl bg-surface-850 p-3">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-ink-100">{home}</span>
-                        <span className="text-[11px] text-ink-500">Home</span>
+                    <div className="flex items-center justify-between rounded-xl bg-surface-850 p-4 ring-1 ring-surface-700/50">
+                      {/* Home Team */}
+                      <div className="flex flex-1 flex-col items-center text-center">
+                        <TeamBadge
+                          team={{
+                            name: home,
+                            badgeUrl: params?.homeBadge ?? null,
+                          }}
+                          size={46}
+                          className="mb-2 shadow-md transition-transform hover:scale-105"
+                        />
+                        <span className="font-bold text-ink-100 text-sm leading-tight line-clamp-2">
+                          {home}
+                        </span>
+                        <span className="mt-1 text-[11px] font-medium text-ink-500">
+                          Home
+                        </span>
                       </div>
-                      <span className="font-bold text-brand-400">VS</span>
-                      <div className="flex flex-col text-right">
-                        <span className="font-semibold text-ink-100">{away}</span>
-                        <span className="text-[11px] text-ink-500">Away</span>
+
+                      {/* VS Divider */}
+                      <div className="flex flex-col items-center justify-center px-3">
+                        <span className="rounded-full bg-surface-800 px-2.5 py-1 text-[11px] font-black tracking-wider text-brand-400 ring-1 ring-surface-700 shadow-sm">
+                          VS
+                        </span>
+                      </div>
+
+                      {/* Away Team */}
+                      <div className="flex flex-1 flex-col items-center text-center">
+                        <TeamBadge
+                          team={{
+                            name: away,
+                            badgeUrl: params?.awayBadge ?? null,
+                          }}
+                          size={46}
+                          className="mb-2 shadow-md transition-transform hover:scale-105"
+                        />
+                        <span className="font-bold text-ink-100 text-sm leading-tight line-clamp-2">
+                          {away}
+                        </span>
+                        <span className="mt-1 text-[11px] font-medium text-ink-500">
+                          Away
+                        </span>
                       </div>
                     </div>
                   )}

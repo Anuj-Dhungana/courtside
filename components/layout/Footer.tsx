@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { TimezoneIndicator } from "@/components/ui/ClientTime";
-
 const LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -65,7 +63,6 @@ export function Footer() {
             <p className="text-xs text-ink-500">
               © {new Date().getFullYear()} CourtSide. All rights reserved.
             </p>
-            <TimezoneIndicator />
           </div>
         </div>
       </div>

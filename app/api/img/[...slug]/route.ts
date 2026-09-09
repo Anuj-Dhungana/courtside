@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { env } from "@/config/env";
-import { isSafeImageId, upstreamImageUrl } from "@/lib/streamed/images";
+import {
+  isSafeImageId,
+  upstreamImageUrl,
+  upstreamMatchPosterUrl,
+} from "@/lib/streamed/images";
 import { logger } from "@/lib/utils/logger";
 import { clientKeyFromHeaders, rateLimit } from "@/lib/utils/rate-limit";
 
@@ -9,13 +13,15 @@ export const runtime = "nodejs";
 
 /**
  * Same-origin image proxy for Streamed badges/posters.
+ * Supports:
+ * - /api/img/badge/:id
+ * - /api/img/poster/:id
+ * - /api/img/poster/:homeBadge/:awayBadge
  *
  * SSRF-safe by construction: the upstream URL is assembled from a fixed
- * base + a strictly validated opaque id — user input can never supply a
+ * base + strictly validated opaque ids — user input can never supply a
  * host, scheme, or path traversal.
  */
-
-const VALID_KINDS = new Set(["badge", "poster"]);
 
 // Transparent 1x1 PNG served when the upstream image is missing.
 const FALLBACK_PNG = Buffer.from(
@@ -35,7 +41,7 @@ function fallback(): NextResponse {
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ kind: string; id: string }> },
+  context: { params: Promise<{ slug: string[] }> },
 ) {
   // Rate limit: 60 req/min per IP. Images are immutably cached 24h on the
   // client, so this only triggers on hard misses or abusive clients.
@@ -45,18 +51,35 @@ export async function GET(
     return new NextResponse(null, { status: 429 });
   }
 
-  const { kind, id } = await context.params;
-  const decodedId = decodeURIComponent(id);
-
-  if (!VALID_KINDS.has(kind) || !isSafeImageId(decodedId)) {
+  const { slug } = await context.params;
+  if (!Array.isArray(slug) || slug.length < 2 || slug.length > 3) {
     return fallback();
   }
 
-  const upstream = upstreamImageUrl(
-    kind as "badge" | "poster",
-    decodedId,
-    env.STREAMED_API_BASE_URL,
-  );
+  const kind = slug[0];
+  let upstream: string | null = null;
+
+  if (kind === "badge" && slug.length === 2) {
+    const id = decodeURIComponent(slug[1]);
+    if (!isSafeImageId(id)) return fallback();
+    upstream = upstreamImageUrl("badge", id, env.STREAMED_API_BASE_URL);
+  } else if (kind === "poster" && slug.length === 2) {
+    const id = decodeURIComponent(slug[1]);
+    if (!isSafeImageId(id)) return fallback();
+    upstream = upstreamImageUrl("poster", id, env.STREAMED_API_BASE_URL);
+  } else if (kind === "poster" && slug.length === 3) {
+    const homeBadge = decodeURIComponent(slug[1]);
+    const awayBadge = decodeURIComponent(slug[2]);
+    if (!isSafeImageId(homeBadge) || !isSafeImageId(awayBadge)) return fallback();
+    upstream = upstreamMatchPosterUrl(
+      homeBadge,
+      awayBadge,
+      env.STREAMED_API_BASE_URL,
+    );
+  } else {
+    return fallback();
+  }
+
   if (!upstream) return fallback();
 
   try {
@@ -82,7 +105,7 @@ export async function GET(
     });
   } catch (err) {
     logger.warn("image_proxy_failed", {
-      kind,
+      slug,
       error: err instanceof Error ? err.message : String(err),
     });
     return fallback();

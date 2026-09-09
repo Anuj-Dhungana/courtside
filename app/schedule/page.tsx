@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { UpcomingFixtureCard } from "@/components/events/UpcomingFixtureCard";
-import { ClientTime, TimezoneIndicator } from "@/components/ui/ClientTime";
+import { ClientTime } from "@/components/ui/ClientTime";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { EventGridSkeleton } from "@/components/ui/Skeleton";
@@ -20,9 +20,7 @@ export const revalidate = 30;
 export default function SchedulePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      <SectionHeading title="Match Schedule" eyebrow="Fixtures">
-        <TimezoneIndicator />
-      </SectionHeading>
+      <SectionHeading title="Match Schedule" eyebrow="Fixtures" />
       <Suspense fallback={<EventGridSkeleton count={8} />}>
         <ScheduleContent />
       </Suspense>

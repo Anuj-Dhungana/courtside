@@ -280,39 +280,9 @@ function getTimeCaption(event?: SportEvent): string {
 }
 
 /**
- * Shows the user's detected local timezone (e.g. "Times shown in Asia/Kathmandu (UTC+05:45)")
+ * Retained for backwards compatibility; returns null to hide timezone notice.
  */
-export function TimezoneIndicator({ className }: { className?: string }) {
-  const [tzInfo, setTzInfo] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const offsetMinutes = -new Date().getTimezoneOffset();
-      const sign = offsetMinutes >= 0 ? "+" : "-";
-      const pad = (n: number) =>
-        Math.floor(Math.abs(n)).toString().padStart(2, "0");
-      const hours = pad(offsetMinutes / 60);
-      const mins = pad(offsetMinutes % 60);
-      const offsetStr = `UTC${sign}${hours}:${mins}`;
-      setTzInfo(`${tzName} (${offsetStr})`);
-    } catch {
-      // fallback
-    }
-  }, []);
-
-  if (!tzInfo) return null;
-
-  return (
-    <span
-      className={
-        className ??
-        "inline-flex items-center gap-1.5 text-[11px] text-ink-500"
-      }
-      title="All match times are automatically converted to your local time."
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-      <span>All times in {tzInfo}</span>
-    </span>
-  );
+export function TimezoneIndicator(_props?: { className?: string }) {
+  return null;
 }
+

@@ -6,7 +6,12 @@ import {
   relativeLabel,
   sportLabel,
 } from "@/lib/utils/format";
-import { isSafeImageId, posterUrl } from "@/lib/streamed/images";
+import {
+  isSafeImageId,
+  matchPosterUrl,
+  posterUrl,
+  upstreamMatchPosterUrl,
+} from "@/lib/streamed/images";
 import { rateLimit } from "@/lib/utils/rate-limit";
 import type { SportEvent } from "@/types";
 
@@ -105,6 +110,28 @@ describe("image id safety", () => {
       "/api/img/poster/opaque",
     );
     expect(posterUrl(null)).toBeNull();
+  });
+  it("generates match poster URLs from team badge ids", () => {
+    expect(matchPosterUrl("badge-home", "badge-away")).toBe(
+      "/api/img/poster/badge-home/badge-away",
+    );
+    expect(
+      matchPosterUrl(
+        "/api/images/badge/home.webp",
+        "/api/images/badge/away.webp",
+      ),
+    ).toBe("/api/img/poster/home/away");
+    expect(matchPosterUrl("home", null)).toBeNull();
+    expect(matchPosterUrl(null, "away")).toBeNull();
+    expect(matchPosterUrl("bad/path", "away")).toBeNull();
+  });
+  it("builds upstream match poster URLs", () => {
+    expect(
+      upstreamMatchPosterUrl("home-id", "away-id", "https://upstream.test"),
+    ).toBe("https://upstream.test/images/poster/home-id/away-id.webp");
+    expect(
+      upstreamMatchPosterUrl("../bad", "away-id", "https://upstream.test"),
+    ).toBeNull();
   });
 });
 

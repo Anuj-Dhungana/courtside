@@ -55,9 +55,13 @@ export default function HomePage() {
         <SectionHeading title="Popular Live" eyebrow="Trending" href="/live" />
         <Suspense
           fallback={
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-36 rounded-2xl" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
+                  <Skeleton className="h-4 w-4/5 rounded" />
+                  <Skeleton className="h-3 w-1/3 rounded" />
+                </div>
               ))}
             </div>
           }
@@ -75,9 +79,13 @@ export default function HomePage() {
         />
         <Suspense
           fallback={
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 rounded-2xl" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
+                  <Skeleton className="h-4 w-4/5 rounded" />
+                  <Skeleton className="h-3 w-1/3 rounded" />
+                </div>
               ))}
             </div>
           }
@@ -126,7 +134,10 @@ export default function HomePage() {
 
 async function PopularSection() {
   try {
-    const live = await getLiveEvents();
+    const [live, userTz] = await Promise.all([
+      getLiveEvents(),
+      getServerTimezone(),
+    ]);
     const popularLive = live.filter((e) => e.popular);
     const displayEvents = deduplicateEvents(
       popularLive.length > 0 ? popularLive : live,
@@ -142,9 +153,9 @@ async function PopularSection() {
     }
 
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {displayEvents.slice(0, 6).map((e) => (
-          <PopularLiveCard key={e.id} event={e} />
+          <PopularLiveCard key={e.id} event={e} serverTimezone={userTz} />
         ))}
       </div>
     );
@@ -181,9 +192,9 @@ async function UpcomingPopularSection() {
     }
 
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {upcomingPopular.map((e) => (
-          <UpcomingFixtureCard
+          <PopularLiveCard
             key={e.id}
             event={e}
             serverTimezone={userTz}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { EventCard } from "@/components/events/EventCard";
+import { PopularLiveCard } from "@/components/events/PopularLiveCard";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { sportLabel } from "@/lib/utils/format";
 import type { SportEvent } from "@/types";
@@ -182,7 +182,7 @@ export function LiveBoard({ initialEvents }: { initialEvents: SportEvent[] }) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((e) => (
-            <EventCard key={e.id} event={e} />
+            <PopularLiveCard key={e.id} event={e} />
           ))}
         </div>
       )}

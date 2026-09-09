@@ -16,6 +16,8 @@ function watchUrl(
     sportId?: string;
     homeTeam?: string;
     awayTeam?: string;
+    homeBadge?: string | null;
+    awayBadge?: string | null;
   },
 ): string {
   const p = new URLSearchParams({
@@ -28,6 +30,8 @@ function watchUrl(
   if (meta.sportId) p.set("sport", meta.sportId);
   if (meta.homeTeam) p.set("home", meta.homeTeam);
   if (meta.awayTeam) p.set("away", meta.awayTeam);
+  if (meta.homeBadge) p.set("homeBadge", meta.homeBadge);
+  if (meta.awayBadge) p.set("awayBadge", meta.awayBadge);
   return `/watch?${p.toString()}`;
 }
 
@@ -44,6 +48,8 @@ export function StreamSection({
   sportId,
   homeTeam,
   awayTeam,
+  homeBadge,
+  awayBadge,
 }: {
   sources: StreamSourceRef[];
   eventTitle: string;
@@ -51,6 +57,8 @@ export function StreamSection({
   sportId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  homeBadge?: string | null;
+  awayBadge?: string | null;
 }) {
   const [streams, setStreams] = useState<StreamOption[] | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
@@ -162,6 +170,8 @@ export function StreamSection({
                   sportId,
                   homeTeam,
                   awayTeam,
+                  homeBadge,
+                  awayBadge,
                 })}
                 className="group flex items-center justify-between gap-4 rounded-xl border border-surface-700/60 bg-surface-900 p-4 transition-all hover:border-brand-500/40 hover:bg-surface-850 hover:shadow-[0_0_20px_rgba(16,185,129,.08)]"
                 aria-label={`Open stream ${s.streamNo} in ${s.language} for ${eventTitle} via CourtSide watch page`}

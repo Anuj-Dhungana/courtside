@@ -32,7 +32,6 @@ export function UpcomingScheduleSection({
             <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
               {tab === "today" ? "Upcoming Today" : "Upcoming Tomorrow"}
             </h2>
-            <TimezoneIndicator />
           </div>
         </div>
 

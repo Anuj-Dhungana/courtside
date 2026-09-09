@@ -159,6 +159,8 @@ export default async function EventPage({ params }: Props) {
         sportId={event.sportId}
         homeTeam={event.home?.name}
         awayTeam={event.away?.name}
+        homeBadge={event.home?.badgeUrl}
+        awayBadge={event.away?.badgeUrl}
       />
 
       {/* Related events */}
