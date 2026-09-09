@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   Copy,
-  ExternalLink,
   Info,
   Moon,
   Sun,
@@ -225,46 +224,32 @@ export default function WatchPage() {
       </div>
 
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 border-b border-surface-700/60 bg-surface-950/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          {/* Left: Back Link & Logo */}
-          <div className="flex items-center gap-4">
-            {params?.eventId ? (
-              <Link
-                href={`/events/${encodeURIComponent(params.eventId)}`}
-                className="group inline-flex items-center gap-1.5 rounded-lg border border-surface-700/80 bg-surface-900/80 px-3 py-1.5 text-xs font-semibold text-ink-300 transition-all hover:border-brand-500/50 hover:bg-surface-800 hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                <span>Back to Event</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== "undefined" && window.history.length > 1) {
-                    window.history.back();
-                  } else {
-                    window.location.assign("/");
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-700/80 bg-surface-900/80 px-3 py-1.5 text-xs font-semibold text-ink-300 transition-all hover:bg-surface-800 hover:text-white"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Back</span>
-              </button>
-            )}
+      <header className="sticky top-0 z-30 border-b border-surface-800/80 bg-surface-950/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+          {/* Left: Back & Brand */}
+          <div className="flex items-center gap-3">
+            <Link
+              href={params?.eventId ? `/events/${encodeURIComponent(params.eventId)}` : "/"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-surface-700 bg-surface-800 text-ink-300 transition-colors hover:border-surface-600 hover:text-white"
+              title="Return to match details"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
 
-            <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/15 ring-1 ring-brand-500/30"
-              >
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/15 text-brand-400 ring-1 ring-brand-500/30">
                 <svg
+                  className="h-4 w-4"
+                  fill="none"
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 text-brand-400"
-                  fill="currentColor"
+                  stroke="currentColor"
                 >
-                  <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 0 1 7.75 6H16.9a5 5 0 0 0-9.8 0H4.25A8 8 0 0 1 12 4Zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-7.75-1h2.85a5 5 0 0 0 3.4 3.9v2.85A8 8 0 0 1 4.25 14Zm9.25 6.75V17.9a5 5 0 0 0 3.4-3.9h2.85a8 8 0 0 1-6.25 6.75Z" />
+                  <circle cx="12" cy="12" r="9" strokeWidth="2" />
+                  <path
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    d="M12 3v18M3 12h18"
+                  />
                 </svg>
               </span>
               <span className="text-sm font-bold tracking-tight">
@@ -273,31 +258,7 @@ export default function WatchPage() {
             </div>
           </div>
 
-          {/* Center: Match Summary */}
-          <div className="hidden max-w-md truncate text-center md:block">
-            <div className="inline-flex items-center gap-2 rounded-full border border-surface-700/60 bg-surface-900/60 px-3.5 py-1">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-              </span>
-              {home && away ? (
-                <span className="text-xs font-semibold text-ink-100">
-                  <span>{home}</span>
-                  <span className="mx-1.5 text-xs font-bold text-ink-500">VS</span>
-                  <span>{away}</span>
-                </span>
-              ) : (
-                <span className="text-xs font-semibold text-ink-100">{title}</span>
-              )}
-              {params?.sport && (
-                <span className="rounded-full bg-surface-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ink-500">
-                  {params.sport}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Ambient & Popout Controls */}
+          {/* Right: Ambient Controls */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -321,19 +282,6 @@ export default function WatchPage() {
                 </>
               )}
             </button>
-
-            {selectedStream?.embedUrl ? (
-              <a
-                href={selectedStream.embedUrl}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-700 bg-surface-800 px-3 py-1.5 text-xs font-semibold text-ink-100 transition-all hover:border-brand-500/40 hover:bg-surface-700"
-                title="Open stream in a standalone tab"
-              >
-                <span>Pop Out</span>
-                <ExternalLink className="h-3.5 w-3.5 text-ink-500" />
-              </a>
-            ) : null}
           </div>
         </div>
       </header>
@@ -395,20 +343,10 @@ export default function WatchPage() {
               {/* Event Header */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-                      LIVE
-                    </span>
-                    <span className="text-xs text-ink-500">
-                      {selectedStream?.language} · Source: {selectedStream?.source}
-                    </span>
-                  </div>
-                  <h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">
+                  <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
                     {title}
                   </h1>
                 </div>
-
               </div>
 
               {/* Player Box */}
@@ -422,8 +360,6 @@ export default function WatchPage() {
                     <span className="font-semibold text-ink-300">
                       Feed #{selectedStream?.streamNo} ({selectedStream?.language})
                     </span>
-                    <span>·</span>
-                    <span>Source: {selectedStream?.source}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -482,18 +418,6 @@ export default function WatchPage() {
                       })}
                     </div>
                   </div>
-
-                  {selectedStream?.embedUrl ? (
-                    <a
-                      href={selectedStream.embedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
-                    >
-                      <span>Open Source</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  ) : null}
                 </div>
               </div>
 
@@ -542,14 +466,6 @@ export default function WatchPage() {
                     <span className="text-ink-500">Sport Category</span>
                     <span className="font-semibold text-ink-300 capitalize">
                       {params?.sport || "Sports"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-ink-500">Status</span>
-                    <span className="inline-flex items-center gap-1 font-semibold text-brand-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
-                      Live in progress
                     </span>
                   </div>
                 </div>
@@ -605,7 +521,7 @@ export default function WatchPage() {
                               {s.language} Stream
                             </p>
                             <p className="text-[11px] text-ink-500">
-                              Source: {s.source}
+                              {s.hd ? "High Definition" : "Live Stream"}
                             </p>
                           </div>
                         </div>

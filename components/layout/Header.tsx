@@ -23,6 +23,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-surface-800/80 bg-surface-950/90 backdrop-blur-md">
+      <div className="border-b border-brand-500/20 bg-brand-500/10 px-4 py-2 text-center text-xs font-medium text-brand-300 sm:px-6">
+        Having issues with ads or playback? Try using Brave Browser for a
+        smoother experience.
+      </div>
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
         {/* Brand Logo */}
         <Link

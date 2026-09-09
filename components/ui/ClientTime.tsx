@@ -146,11 +146,11 @@ export function ClientCountdown({
   ms,
   className,
 }: {
-  ms: number;
+  ms?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [text, setText] = useState<string>(() => relativeLabel(ms));
+  const [text, setText] = useState<string>(() => (ms ? relativeLabel(ms) : "Time TBD"));
 
   useEffect(() => {
     if (!ms) return;
@@ -180,11 +180,11 @@ export function ClientElapsed({
   startTime,
   className,
 }: {
-  startTime: number;
+  startTime?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [text, setText] = useState<string>(() => getLiveElapsed(startTime));
+  const [text, setText] = useState<string>(() => (startTime ? getLiveElapsed(startTime) : "In progress"));
 
   useEffect(() => {
     if (!startTime) return;
@@ -207,8 +207,8 @@ export function ClientElapsed({
   );
 }
 
-function getLiveElapsed(startTime: number): string {
-  if (!startTime) return "In progress";
+function getLiveElapsed(startTime?: number): string {
+  if (!startTime || startTime <= 0) return "In progress";
   const elapsedMs = Date.now() - startTime;
   if (elapsedMs < 0) return "Starting now";
   const mins = Math.floor(elapsedMs / 60_000);
@@ -227,13 +227,14 @@ export function ClientTimeCaption({
   event,
   className,
 }: {
-  event: SportEvent;
+  event?: SportEvent;
   className?: string;
 }) {
   const ref = useRef<HTMLParagraphElement>(null);
-  const [caption, setCaption] = useState<string>(() => getTimeCaption(event));
+  const [caption, setCaption] = useState<string>(() => (event ? getTimeCaption(event) : ""));
 
   useEffect(() => {
+    if (!event) return;
     const update = () => {
       const text = getTimeCaption(event);
       setCaption(text);
@@ -263,7 +264,8 @@ export function ClientTimeCaption({
   );
 }
 
-function getTimeCaption(event: SportEvent): string {
+function getTimeCaption(event?: SportEvent): string {
+  if (!event) return "";
   if (event.status === "live") {
     if (!event.startTime) return "In progress";
     return `Started ${relativeLabel(event.startTime)}`.replace("in ", "");
@@ -273,6 +275,7 @@ function getTimeCaption(event: SportEvent): string {
   if (event.status === "cancelled") return "Fixture cancelled";
   if (event.status === "suspended") return "Match suspended";
   if (event.status === "finished") return "Match concluded";
+  if (!event.startTime) return "Kickoff TBD";
   return relativeLabel(event.startTime);
 }
 
