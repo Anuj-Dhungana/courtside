@@ -10,7 +10,9 @@ import type { EventStatus, Sport, SportEvent, StreamOption } from "@/types";
  *     for cancellation, postponement, suspension, or delay.
  *  2. Authoritative Live Feed: If present in /matches/live -> "live".
  *  3. Upstream status field (if provided by upstream API).
- *  4. Strict Kickoff Fallback (NEVER automatically label LIVE):
+ *  4. Pre-live window: scheduled events within 60 seconds of kickoff are
+ *     shown as live so the live board is ready at the start time.
+ *  5. Strict Kickoff Fallback (NEVER automatically label LIVE after kickoff):
  *     - startTime === 0: "unknown"
  *     - startTime > now: "scheduled"
  *     - startTime <= now && NOT in live feed:
@@ -20,6 +22,7 @@ import type { EventStatus, Sport, SportEvent, StreamOption } from "@/types";
 
 /** Max expected duration of an active fixture before assuming conclusion. */
 const MAX_EVENT_DURATION_MS = 4 * 60 * 60 * 1000; // 4 hours
+export const PRE_LIVE_WINDOW_MS = 60 * 1000;
 
 export function parseStatusFromTitle(title: string): EventStatus | null {
   if (!title) return null;
@@ -56,10 +59,16 @@ export function deriveStatus(
     if (titleStatus) return titleStatus;
   }
 
-  // 2. Explicit upstream status if recognized
-  if (meta?.upstreamStatus) {
-    const parsed = parseUpstreamStatus(meta.upstreamStatus);
-    if (parsed) return parsed;
+  const upstreamStatus = meta?.upstreamStatus
+    ? parseUpstreamStatus(meta.upstreamStatus)
+    : null;
+
+  // 2. Explicit upstream status that should never be overridden by timing.
+  if (
+    upstreamStatus &&
+    !["scheduled", "upcoming"].includes(upstreamStatus)
+  ) {
+    return upstreamStatus;
   }
 
   // 3. Authoritative live feed inclusion
@@ -71,9 +80,17 @@ export function deriveStatus(
     return "live";
   }
 
+  // 4. Show imminent scheduled events on the live board before kickoff.
+  if (
+    startTime > now &&
+    startTime - now <= PRE_LIVE_WINDOW_MS
+  ) {
+    return "live";
+  }
+
   // 5. Time-based fallback with strict safeguards
   if (startTime === 0) return "unknown";
-  if (startTime > now) return "scheduled";
+  if (startTime > now) return upstreamStatus ?? "scheduled";
 
   // Event start time is in the past, but it is NOT in the authoritative live feed.
   // NEVER assume an event is LIVE without authoritative live feed confirmation.

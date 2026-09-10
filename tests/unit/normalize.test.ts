@@ -33,9 +33,22 @@ describe("deriveStatus", () => {
     expect(deriveStatus(NOW - 1000, NOW, true)).toBe("live");
   });
 
-  it("returns scheduled for future events", () => {
-    expect(deriveStatus(NOW + 1000, NOW, false)).toBe("scheduled");
+  it("returns live during the final minute before kickoff", () => {
+    expect(deriveStatus(NOW + 60_000, NOW, false)).toBe("live");
+    expect(deriveStatus(NOW + 1000, NOW, false)).toBe("live");
+  });
+
+  it("returns scheduled for events outside the pre-live window", () => {
     expect(deriveStatus(NOW + 3_600_000, NOW, false)).toBe("scheduled");
+  });
+
+  it("preserves terminal upstream statuses during the pre-live window", () => {
+    expect(
+      deriveStatus(NOW + 1000, NOW, false, { upstreamStatus: "postponed" }),
+    ).toBe("postponed");
+    expect(
+      deriveStatus(NOW + 1000, NOW, false, { upstreamStatus: "cancelled" }),
+    ).toBe("cancelled");
   });
 
   it("returns unknown for missing or 0 timestamps", () => {

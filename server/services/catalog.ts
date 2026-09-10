@@ -10,6 +10,7 @@ import {
 } from "@/lib/streamed/types";
 import {
   normalizeMatch,
+  PRE_LIVE_WINDOW_MS,
   normalizeSport,
   normalizeStream,
   sortEvents,
@@ -78,6 +79,17 @@ export async function getLiveEvents(): Promise<SportEvent[]> {
   const channels = todayMatches.filter(
     (c) => c.status === "live" && c.startTime <= 0,
   );
+  const preLiveEvents = todayMatches.filter((event) => {
+    const startsIn = event.startTime - Date.now();
+    return (
+      event.startTime > 0 &&
+      startsIn > 0 &&
+      startsIn <= PRE_LIVE_WINDOW_MS &&
+      !["cancelled", "postponed", "suspended", "finished"].includes(
+        event.status,
+      )
+    );
+  });
 
   // Deduplicate: If an admin channel represents the same event as a live match
   // (shares a source ID or matching title), the admin channel takes priority because
@@ -118,6 +130,13 @@ export async function getLiveEvents(): Promise<SportEvent[]> {
     if (!existingIds.has(ch.id)) {
       existingIds.add(ch.id);
       merged.push(ch);
+    }
+  }
+
+  for (const event of preLiveEvents) {
+    if (!existingIds.has(event.id)) {
+      existingIds.add(event.id);
+      merged.push({ ...event, status: "live" });
     }
   }
 
