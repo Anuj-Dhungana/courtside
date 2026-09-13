@@ -45,6 +45,7 @@ export default function WatchPage() {
   const [copied, setCopied] = useState(false);
 
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const hasFetchedInitialStreams = useRef(false);
 
   // Parse URL search params on mount
   useEffect(() => {
@@ -205,7 +206,8 @@ export default function WatchPage() {
   }, []);
 
   useEffect(() => {
-    if (params) {
+    if (params && !hasFetchedInitialStreams.current) {
+      hasFetchedInitialStreams.current = true;
       void fetchStreams(params);
     }
   }, [params, fetchStreams]);
