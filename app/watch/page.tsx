@@ -36,10 +36,18 @@ interface MatchMeta {
   awayBadge?: string;
 }
 
+type StreamProvider = "streamed" | "streamfree";
+
+function getStreamProvider(source: string): StreamProvider {
+  return source === "streamfree" ? "streamfree" : "streamed";
+}
+
 export default function WatchPage() {
   const [params, setParams] = useState<MatchMeta | null>(null);
   const [streams, setStreams] = useState<StreamOption[]>([]);
   const [selectedStream, setSelectedStream] = useState<StreamOption | null>(null);
+  const [selectedProvider, setSelectedProvider] =
+    useState<StreamProvider>("streamed");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [ambientGlow, setAmbientGlow] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -87,8 +95,31 @@ export default function WatchPage() {
     try {
       let candidateStreams: StreamOption[] = [];
 
+      if (p.eventId) {
+        try {
+          const eventStreamsRes = await fetch(
+            `/api/events/${encodeURIComponent(p.eventId)}/streams`,
+            { cache: "no-store" },
+          );
+          if (eventStreamsRes.ok) {
+            const eventStreams = (await eventStreamsRes.json()) as {
+              providers?: {
+                streamed?: StreamOption[];
+                streamfree?: StreamOption[];
+              };
+            };
+            candidateStreams = [
+              ...(eventStreams.providers?.streamed ?? []),
+              ...(eventStreams.providers?.streamfree ?? []),
+            ];
+          }
+        } catch {
+          // Fall through to the requested source.
+        }
+      }
+
       // 1. If a specific source and id was requested, try fetching that first
-      if (p.source && p.id) {
+      if (candidateStreams.length === 0 && p.source && p.id) {
         try {
           const res = await fetch(
             `/api/streams/${encodeURIComponent(p.source)}/${encodeURIComponent(p.id)}`,
@@ -197,7 +228,12 @@ export default function WatchPage() {
         uniqueStreams.find(
           (s) =>
             s.streamNo === p.streamNo && (!p.source || s.source === p.source),
-        ) ?? uniqueStreams[0];
+        ) ??
+        uniqueStreams.find(
+          (s) => getStreamProvider(s.source) === getStreamProvider(p.source),
+        ) ??
+        uniqueStreams[0];
+      setSelectedProvider(getStreamProvider(initial.source));
       setSelectedStream(initial);
       setState("ready");
     } catch {
@@ -212,6 +248,20 @@ export default function WatchPage() {
     }
   }, [params, fetchStreams]);
 
+  const visibleStreams = streams.filter(
+    (stream) => getStreamProvider(stream.source) === selectedProvider,
+  );
+  const providerCounts = {
+    streamed: streams.filter((stream) => getStreamProvider(stream.source) === "streamed").length,
+    streamfree: streams.filter((stream) => getStreamProvider(stream.source) === "streamfree").length,
+  };
+  const chooseProvider = (provider: StreamProvider) => {
+    const nextStreams = streams.filter(
+      (stream) => getStreamProvider(stream.source) === provider,
+    );
+    setSelectedProvider(provider);
+    setSelectedStream(nextStreams[0] ?? null);
+  };
 
   const copyShareLink = () => {
     if (typeof window !== "undefined") {
@@ -429,11 +479,14 @@ export default function WatchPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-medium text-ink-500">Available feeds:</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {streams.map((s) => {
-                        const isActive = s.streamNo === selectedStream?.streamNo;
+                      {visibleStreams.map((s) => {
+                        const isActive =
+                          s.source === selectedStream?.source &&
+                          s.id === selectedStream?.id &&
+                          s.streamNo === selectedStream?.streamNo;
                         return (
                           <button
-                            key={s.streamNo}
+                            key={`${s.source}-${s.id}-${s.streamNo}`}
                             type="button"
                             onClick={() => setSelectedStream(s)}
                             className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
@@ -551,60 +604,31 @@ export default function WatchPage() {
                     Channel Selector
                   </span>
                   <span className="rounded-full bg-surface-800 px-2 py-0.5 text-[10px] font-bold text-brand-400">
-                    {streams.length} Feeds
+                    {visibleStreams.length} Feeds
                   </span>
                 </div>
 
-                <div className="mt-3 space-y-2">
-                  {streams.map((s) => {
-                    const isCurrent = s.streamNo === selectedStream?.streamNo;
-                    return (
-                      <button
-                        key={s.streamNo}
-                        type="button"
-                        onClick={() => setSelectedStream(s)}
-                        className={`flex w-full items-center justify-between rounded-xl p-3 text-left transition-all ${
-                          isCurrent
-                            ? "border border-brand-500/50 bg-brand-500/10 text-white"
-                            : "border border-surface-700/60 bg-surface-850 text-ink-300 hover:border-surface-600 hover:bg-surface-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
-                              isCurrent
-                                ? "bg-brand-500 text-surface-950"
-                                : "bg-surface-700 text-ink-300"
-                            }`}
-                          >
-                            #{s.streamNo}
-                          </span>
-                          <div>
-                            <p className="text-xs font-semibold text-ink-100">
-                              {s.language} Stream
-                            </p>
-                            <p className="text-[11px] text-ink-500">
-                              {s.hd ? "High Definition" : "Live Stream"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {s.hd && (
-                            <span className="rounded bg-brand-500/20 px-1.5 py-0.5 text-[10px] font-bold text-brand-400">
-                              HD
-                            </span>
-                          )}
-                          {isCurrent && (
-                            <span className="inline-flex items-center gap-1 text-xs text-brand-400 font-bold">
-                              <Check className="h-3.5 w-3.5" />
-                              <span>Active</span>
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {(["streamed", "streamfree"] as const).map((provider) => {
+                      if (providerCounts[provider] === 0) return null;
+                      return (
+                        <button
+                          key={provider}
+                          type="button"
+                          onClick={() => chooseProvider(provider)}
+                          className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                            selectedProvider === provider
+                              ? "bg-brand-500 text-surface-950"
+                              : "border border-surface-700 bg-surface-800 text-ink-300 hover:bg-surface-700 hover:text-white"
+                          }`}
+                        >
+                          {provider === "streamed" ? "Streamed" : "StreamFree"}
+                          <span className="ml-1 opacity-70">({providerCounts[provider]})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-surface-700/60">
