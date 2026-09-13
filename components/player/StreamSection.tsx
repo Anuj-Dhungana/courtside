@@ -5,7 +5,18 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
-import type { StreamOption, StreamSourceRef } from "@/types";
+import type { StreamOption } from "@/types";
+
+type Provider = "streamed" | "streamfree";
+
+interface EventStreamsResponse {
+  streams?: StreamOption[];
+  provider?: Provider | "none";
+  providers?: {
+    streamed?: StreamOption[];
+    streamfree?: StreamOption[];
+  };
+}
 
 /** Build the /watch interstitial URL for a stream. */
 function watchUrl(
@@ -42,7 +53,6 @@ function watchUrl(
  * with responsive player controls, stream switching, and direct source access.
  */
 export function StreamSection({
-  sources,
   eventTitle,
   eventId,
   sportId,
@@ -51,7 +61,6 @@ export function StreamSection({
   homeBadge,
   awayBadge,
 }: {
-  sources: StreamSourceRef[];
   eventTitle: string;
   eventId?: string;
   sportId?: string;
@@ -61,40 +70,30 @@ export function StreamSection({
   awayBadge?: string | null;
 }) {
   const [streams, setStreams] = useState<StreamOption[] | null>(null);
+  const [providerStreams, setProviderStreams] = useState<
+    Record<Provider, StreamOption[]>
+  >({ streamed: [], streamfree: [] });
+  const [selectedProvider, setSelectedProvider] = useState<Provider>("streamed");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
-    if (sources.length === 0) {
-      setStreams([]);
-      setState("ready");
-      return;
-    }
     setState("loading");
     try {
-      const results = await Promise.allSettled(
-        sources.slice(0, 4).map(async (s) => {
-          const res = await fetch(
-            `/api/streams/${encodeURIComponent(s.source)}/${encodeURIComponent(s.id)}`,
-            { cache: "no-store" },
-          );
-          if (!res.ok) throw new Error(`status ${res.status}`);
-          const data = (await res.json()) as { streams?: StreamOption[] };
-          return data.streams ?? [];
-        }),
+      const res = await fetch(
+        `/api/events/${encodeURIComponent(eventId ?? "")}/streams`,
+        { cache: "no-store" },
       );
-      const merged = results
-        .filter(
-          (r): r is PromiseFulfilledResult<StreamOption[]> =>
-            r.status === "fulfilled",
-        )
-        .flatMap((r) => r.value);
-      if (
-        merged.length === 0 &&
-        results.every((r) => r.status === "rejected")
-      ) {
-        setState("error");
-        return;
-      }
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const data = (await res.json()) as EventStreamsResponse;
+      const nextProviders = {
+        streamed: data.providers?.streamed ?? [],
+        streamfree: data.providers?.streamfree ?? [],
+      };
+      const defaultProvider =
+        nextProviders.streamed.length > 0 ? "streamed" : "streamfree";
+      const merged = nextProviders[defaultProvider];
+      setProviderStreams(nextProviders);
+      setSelectedProvider(defaultProvider);
       merged.sort((a, b) => {
         if (a.hd !== b.hd) return a.hd ? -1 : 1;
         return a.streamNo - b.streamNo;
@@ -104,7 +103,12 @@ export function StreamSection({
     } catch {
       setState("error");
     }
-  }, [sources]);
+  }, [eventId]);
+
+  const selectProvider = (provider: Provider) => {
+    setSelectedProvider(provider);
+    setStreams(providerStreams[provider]);
+  };
 
   useEffect(() => {
     void load();
@@ -160,7 +164,29 @@ export function StreamSection({
           </p>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <>
+          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Choose stream provider">
+            {(["streamed", "streamfree"] as const).map((provider) => {
+              const available = providerStreams[provider].length > 0;
+              if (!available) return null;
+              return (
+                <button
+                  key={provider}
+                  type="button"
+                  onClick={() => selectProvider(provider)}
+                  className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                    selectedProvider === provider
+                      ? "bg-brand-500 text-surface-950"
+                      : "border border-surface-700 bg-surface-900 text-ink-300 hover:bg-surface-800 hover:text-white"
+                  }`}
+                >
+                  {provider === "streamed" ? "Streamed" : "StreamFree"}
+                  <span className="ml-1.5 opacity-70">({providerStreams[provider].length})</span>
+                </button>
+              );
+            })}
+          </div>
+          <ul className="space-y-2">
           {streams!.map((s) => (
             <li key={`${s.source}-${s.id}-${s.streamNo}`}>
               <Link
@@ -201,7 +227,8 @@ export function StreamSection({
               </Link>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       )}
     </section>
   );
