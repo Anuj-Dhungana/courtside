@@ -27,8 +27,8 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-surface-800/80 bg-surface-950/90 backdrop-blur-md">
       {!isIssuesPage ? (
         <div className="border-b border-brand-500/20 bg-brand-500/10 px-4 py-2 text-center text-xs font-medium text-brand-300 sm:px-6">
-          Having issues with ads or playback? Try using Brave Browser for a
-          smoother experience. {" "}
+          Having issues with ads or playback? Try Brave Browser or the uBlock
+          Origin extension for a smoother experience. {" "}
           <Link
             href="/issues"
             className="font-bold underline underline-offset-2 hover:text-brand-100"

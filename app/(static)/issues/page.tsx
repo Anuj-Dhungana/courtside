@@ -18,12 +18,13 @@ export default function IssuesPage() {
         </h1>
         <p>
           For a smoother browsing experience, we recommend using Brave Browser,
-          especially on Android and Windows.
+          especially on Android and Windows. On desktop browsers, uBlock Origin
+          is another option for blocking ads and trackers.
         </p>
         <p>
           <strong className="text-ink-100">Important:</strong> VPN or DNS
           settings are not required for ad blocking. Use Brave&apos;s built-in ad
-          blocker for ads.
+          blocker or the uBlock Origin extension for ads.
         </p>
         <p>
           VPN/DNS settings are only recommended if the video is not loading or
@@ -38,20 +39,22 @@ export default function IssuesPage() {
           <span aria-hidden="true">&#128737;&#65039; </span>1. For Blocking Ads
         </h2>
         <p>
-          If you&apos;re seeing too many advertisements, use Brave&apos;s built-in
-          Shields/ad blocker.
+          If you&apos;re seeing too many advertisements, use Brave Browser&apos;s
+          built-in ad blocker or the uBlock Origin extension.
         </p>
         <h3 className="text-lg font-bold text-ink-100">
           Recommended settings
         </h3>
-        <p className="font-semibold text-ink-100">Brave Shields → ON</p>
+        <p className="font-semibold text-ink-100">
+          Brave Browser ad blocking → ON
+        </p>
         <p className="font-semibold text-ink-100">
           Trackers &amp; ads blocking&nbsp; if it still show the ads use
           aggressive mode.
         </p>
         <Image
           src="/issues/brave-shields-windows.png"
-          alt="Brave desktop Shields settings with aggressive ad blocking highlighted"
+          alt="Brave Browser desktop ad-blocking settings"
           width={1126}
           height={800}
           className="h-auto w-full"
@@ -61,23 +64,47 @@ export default function IssuesPage() {
 
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-ink-100">
-          <span aria-hidden="true">&#128241; </span>2. Android — Brave Setup
+          <span aria-hidden="true">&#128269; </span>uBlock Origin
+        </h2>
+        <p>
+          On supported desktop browsers, install the uBlock Origin extension
+          from your browser&apos;s official extension store and keep its default
+          blocking settings enabled. Do not install similarly named extensions
+          from untrusted websites.
+        </p>
+        <p>
+          If a video does not load, temporarily use the uBlock Origin power
+          button for the embedded player&apos;s page and refresh. Re-enable
+          protection when you finish, and only allowlist a site when necessary.
+        </p>
+        <Image
+          src="/issues/u%20blockorigin.png"
+          alt="uBlock Origin browser extension controls"
+          width={235}
+          height={101}
+          className="h-auto w-full max-w-sm"
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold text-ink-100">
+          <span aria-hidden="true">&#128241; </span>2. Android — Brave Browser Setup
         </h2>
         <h3 className="text-lg font-bold text-ink-100">Step 1 — Install Brave</h3>
         <p>
           Install and open Brave Browser, then visit the website through Brave.
         </p>
         <h3 className="text-lg font-bold text-ink-100">
-          Step 2 — Turn ON Shields
+          Step 2 — Enable Brave Browser ad blocking
         </h3>
         <ol className="list-decimal space-y-2 pl-5">
           <li>Open the website in Brave.</li>
-          <li>Go to setting and choose brave shield and privacy</li>
-          <li>Set Trackers &amp; ads blocking to Aggressive, if available.</li>
+          <li>Open Brave Browser&apos;s privacy and ad-blocking settings.</li>
+          <li>Turn on the available ad and tracker blocking options.</li>
         </ol>
         <Image
           src="/issues/brave-shields-android.png"
-          alt="Brave Android Shields and privacy settings with aggressive blocking highlighted"
+          alt="Brave Browser Android privacy and ad-blocking settings"
           width={383}
           height={853}
           className="mx-auto h-auto max-w-full"
@@ -104,12 +131,13 @@ export default function IssuesPage() {
           First, simply refresh the website and try playing the video again.
         </p>
         <h3 className="text-lg font-bold text-ink-100">
-          Step 2 — Check Brave Shields
+          Step 2 — Check Brave Browser ad-blocking settings
         </h3>
         <p>
           If the video still doesn&apos;t work:
           <br />
-          Shields icon → Turn Shields OFF for this website → Refresh
+          Brave Browser ad-blocking settings → Temporarily turn blocking off
+          for this website → Refresh
         </p>
         <p>
           If the video starts working, Brave&apos;s blocking settings may have been
@@ -127,7 +155,7 @@ export default function IssuesPage() {
         <p className="font-semibold text-ink-100">
           Brave Settings
           <br />
-          → Brave Shields &amp; privacy
+          → Brave Browser privacy settings
           <br />
           → scroll down and choose Use secure DNS
           <br />
@@ -140,12 +168,14 @@ export default function IssuesPage() {
         <h2 className="text-xl font-bold text-ink-100">
           <span aria-hidden="true">&#128187; </span>5. Windows — Brave Setup
         </h2>
-        <h3 className="text-lg font-bold text-ink-100">Enable Shields</h3>
+        <h3 className="text-lg font-bold text-ink-100">
+          Enable Brave Browser ad blocking
+        </h3>
         <ol className="list-decimal space-y-2 pl-5">
           <li>Open Brave Browser.</li>
-          <li>Click the Shields icon in the address bar.</li>
-          <li>Make sure Shields are ON.</li>
-          <li>Set Trackers &amp; ads blocking → Aggressive, if available.</li>
+          <li>Open the privacy and ad-blocking controls.</li>
+          <li>Make sure ad and tracker blocking is turned on.</li>
+          <li>Use the strongest available blocking option.</li>
         </ol>
         <h3 className="text-lg font-bold text-ink-100">Enable Secure DNS</h3>
         <p>Only do this if your video is not working.</p>
@@ -204,12 +234,14 @@ export default function IssuesPage() {
         </p>
         <h3 className="text-lg font-bold text-ink-100">For Ads</h3>
         <p>Use:</p>
-        <p className="font-semibold text-ink-100">Brave Shields / Ad Blocker</p>
+        <p className="font-semibold text-ink-100">
+          Brave Browser or the uBlock Origin extension
+        </p>
         <p>You don&apos;t need a VPN or DNS just to block ads.</p>
         <h3 className="text-lg font-bold text-ink-100">For Video Problems</h3>
         <p>If the video is not working:</p>
         <p className="font-semibold text-ink-100">
-          Shields → Adjust blocking settings → Refresh
+          Brave Browser ad-blocking settings → Adjust blocking settings → Refresh
         </p>
         <p>
           If the problem continues, you can try a compatible 1.1.1.1 DNS or WARP
@@ -226,7 +258,7 @@ export default function IssuesPage() {
         <h3 className="text-lg font-bold text-ink-100">
           <span aria-hidden="true">&#128737;&#65039; </span>Want to block ads?
         </h3>
-        <p>Use Brave Shields / Ad Blocker.</p>
+        <p>Use Brave Browser or the uBlock Origin extension.</p>
         <p>❌ No VPN required</p>
         <p>❌ No DNS change required</p>
         <h3 className="text-lg font-bold text-ink-100">
@@ -240,8 +272,8 @@ export default function IssuesPage() {
         <p>Try these steps in order:</p>
         <ol className="list-decimal space-y-2 pl-5">
           <li>Refresh the page</li>
-          <li>Check Brave Shields</li>
-          <li>Temporarily disable Shields for the website</li>
+          <li>Check Brave Browser or uBlock Origin extension settings</li>
+          <li>Temporarily disable blocking for the website</li>
           <li>Try Cloudflare 1.1.1.1 DNS</li>
           <li>Try Cloudflare WARP</li>
         </ol>
@@ -252,7 +284,8 @@ export default function IssuesPage() {
         <p>
           For normal browsing and ads:
           <br />
-          <span aria-hidden="true">&#128737;&#65039; </span>Brave + Shields ON
+          <span aria-hidden="true">&#128737;&#65039; </span>Brave Browser or
+          uBlock Origin extension for ads
         </p>
         <p>
           For video playback problems only:
