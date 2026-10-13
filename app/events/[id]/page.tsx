@@ -153,7 +153,6 @@ export default async function EventPage({ params }: Props) {
 
       {/* Streams */}
       <StreamSection
-        sources={event.sources}
         eventTitle={event.title}
         eventId={event.id}
         sportId={event.sportId}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getStreams } from "@/server/services/catalog";
+import { getProviderStream } from "@/server/services/streams";
 import { clientKeyFromHeaders, rateLimit } from "@/lib/utils/rate-limit";
 import { logger } from "@/lib/utils/logger";
 
@@ -19,7 +19,7 @@ export async function GET(
 
   const { source, id } = await context.params;
   try {
-    const streams = await getStreams(
+    const streams = await getProviderStream(
       decodeURIComponent(source),
       decodeURIComponent(id),
     );
