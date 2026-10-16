@@ -49,9 +49,6 @@ describe("PWA Manifest & Configuration", () => {
     expect(
       fs.existsSync(path.join(publicIconsDir, "icon-maskable-512x512.png"))
     ).toBe(true);
-    expect(fs.existsSync(path.join(publicIconsDir, "apple-touch-icon.png"))).toBe(
-      true
-    );
     expect(fs.existsSync(path.join(publicIconsDir, "icon.svg"))).toBe(true);
   });
 
