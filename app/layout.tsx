@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/apple-touch-icon.png",
+    icon: "/issues/logo.png",
+    apple: "/issues/logo.png",
   },
   openGraph: {
     siteName: "CourtSide",

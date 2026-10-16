@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Search, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -45,18 +46,14 @@ export function Header() {
           className="flex items-center gap-2 text-lg font-bold tracking-tight"
           aria-label="CourtSide — home"
         >
-          <span
-            aria-hidden="true"
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/20 ring-1 ring-brand-500/40"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5 text-brand-400"
-              fill="currentColor"
-            >
-              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 0 1 7.75 6H16.9a5 5 0 0 0-9.8 0H4.25A8 8 0 0 1 12 4Zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-7.75-1h2.85a5 5 0 0 0 3.4 3.9v2.85A8 8 0 0 1 4.25 14Zm9.25 6.75V17.9a5 5 0 0 0 3.4-3.9h2.85a8 8 0 0 1-6.25 6.75Z" />
-            </svg>
-          </span>
+          <Image
+            src="/issues/logo.png"
+            alt=""
+            width={44}
+            height={32}
+            className="h-8 w-11 rounded-xl object-cover"
+            priority
+          />
           <span className="font-bold tracking-tight text-white">
             Court<span className="text-brand-400">Side</span>
           </span>

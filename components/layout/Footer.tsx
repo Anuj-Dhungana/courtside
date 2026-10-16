@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -24,9 +25,19 @@ export function Footer() {
           <div>
             <Link
               href="/"
-              className="text-xl font-bold tracking-tight text-white"
+              className="flex items-center gap-2 text-xl font-bold tracking-tight text-white"
+              aria-label="CourtSide — home"
             >
-              Court<span className="text-brand-400">Side</span>
+              <Image
+                src="/issues/logo.png"
+                alt=""
+                width={36}
+                height={26}
+                className="h-7 w-9 rounded-lg object-cover"
+              />
+              <span>
+                Court<span className="text-brand-400">Side</span>
+              </span>
             </Link>
           </div>
 
@@ -70,4 +81,3 @@ export function Footer() {
     </footer>
   );
 }
-

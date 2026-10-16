@@ -107,7 +107,7 @@ export function InstallPrompt() {
           <div className="flex items-center gap-3">
             <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-950 p-1 ring-1 ring-surface-800">
               <Image
-                src="/icons/icon-192x192.png"
+                src="/issues/logo.png"
                 alt="CourtSide App Icon"
                 width={44}
                 height={44}
@@ -165,7 +165,7 @@ export function InstallPrompt() {
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-950 p-1.5 ring-1 ring-surface-800">
                 <Image
-                  src="/icons/icon-192x192.png"
+                  src="/issues/logo.png"
                   alt="CourtSide"
                   width={48}
                   height={48}

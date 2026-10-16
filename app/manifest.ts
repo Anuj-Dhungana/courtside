@@ -17,12 +17,6 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "en",
     icons: [
       {
-        src: "/icons/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "any",
-      },
-      {
         src: "/icons/icon-192x192.png",
         sizes: "192x192",
         type: "image/png",
@@ -47,28 +41,28 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Live",
         description: "Check active live sports events and streams",
         url: "/live",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Upcoming Schedule",
         short_name: "Schedule",
         description: "View today and tomorrow match schedule",
         url: "/schedule",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Sports Directory",
         short_name: "Sports",
         description: "Browse sports and leagues",
         url: "/sports",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Search Events",
         short_name: "Search",
         description: "Search teams, competitions and matches",
         url: "/search",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
       },
     ],
   };
