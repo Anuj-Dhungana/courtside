@@ -34,7 +34,12 @@ export default function PrivacyPage() {
       <h2 className="text-xl font-bold text-ink-100">Contact</h2>
       <p>
         Privacy questions:{" "}
-        <span className="font-mono text-sm">privacy@courtside.example</span>
+        <a
+          href="mailto:courtside281@gmail.com"
+          className="font-mono text-sm text-brand-400 hover:text-brand-300"
+        >
+          courtside281@gmail.com
+        </a>
       </p>
     </div>
   );
