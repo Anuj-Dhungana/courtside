@@ -36,10 +36,10 @@ interface MatchMeta {
   awayBadge?: string;
 }
 
-type StreamProvider = "streamed" | "streamfree";
+type StreamProvider = "streamfree";
 
-function getStreamProvider(source: string): StreamProvider {
-  return source === "streamfree" ? "streamfree" : "streamed";
+function getStreamProvider(source: string): StreamProvider | null {
+  return source === "streamfree" ? "streamfree" : null;
 }
 
 export default function WatchPage() {
@@ -47,7 +47,7 @@ export default function WatchPage() {
   const [streams, setStreams] = useState<StreamOption[]>([]);
   const [selectedStream, setSelectedStream] = useState<StreamOption | null>(null);
   const [selectedProvider, setSelectedProvider] =
-    useState<StreamProvider>("streamed");
+    useState<StreamProvider>("streamfree");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [ambientGlow, setAmbientGlow] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -104,12 +104,10 @@ export default function WatchPage() {
           if (eventStreamsRes.ok) {
             const eventStreams = (await eventStreamsRes.json()) as {
               providers?: {
-                streamed?: StreamOption[];
                 streamfree?: StreamOption[];
               };
             };
             candidateStreams = [
-              ...(eventStreams.providers?.streamed ?? []),
               ...(eventStreams.providers?.streamfree ?? []),
             ];
           }
@@ -233,7 +231,7 @@ export default function WatchPage() {
           (s) => getStreamProvider(s.source) === getStreamProvider(p.source),
         ) ??
         uniqueStreams[0];
-      setSelectedProvider(getStreamProvider(initial.source));
+      setSelectedProvider("streamfree");
       setSelectedStream(initial);
       setState("ready");
     } catch {
@@ -252,7 +250,6 @@ export default function WatchPage() {
     (stream) => getStreamProvider(stream.source) === selectedProvider,
   );
   const providerCounts = {
-    streamed: streams.filter((stream) => getStreamProvider(stream.source) === "streamed").length,
     streamfree: streams.filter((stream) => getStreamProvider(stream.source) === "streamfree").length,
   };
   const chooseProvider = (provider: StreamProvider) => {
@@ -610,7 +607,7 @@ export default function WatchPage() {
 
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2">
-                    {(["streamed", "streamfree"] as const).map((provider) => {
+                    {(["streamfree"] as const).map((provider) => {
                       if (providerCounts[provider] === 0) return null;
                       return (
                         <button
@@ -623,7 +620,7 @@ export default function WatchPage() {
                               : "border border-surface-700 bg-surface-800 text-ink-300 hover:bg-surface-700 hover:text-white"
                           }`}
                         >
-                          {provider === "streamed" ? "Streamed" : "StreamFree"}
+                          StreamFree
                           <span className="ml-1 opacity-70">({providerCounts[provider]})</span>
                         </button>
                       );

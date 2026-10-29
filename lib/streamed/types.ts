@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Zod schemas for raw Streamed API responses.
+ * Legacy schemas retained for compatibility with existing normalization tests.
  *
  * Schemas verified against https://streamed.pk/docs (Matches, Streams,
  * Sports, Images) and live responses on 2026-09-07.

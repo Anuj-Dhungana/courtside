@@ -48,13 +48,28 @@ function mapStream(raw: unknown): StreamFreeStream | null {
   const parsed = streamFreeSingleResponseSchema.safeParse(raw);
   if (!parsed.success) return null;
   return {
+    id: parsed.data.id,
     name: parsed.data.name.trim(),
     category: parsed.data.category.trim().toLowerCase(),
     league: parsed.data.league?.trim() || null,
     streamKey: parsed.data.stream_key,
     matchTimestamp: parsed.data.match_timestamp ?? null,
     sources: parsed.data.sources,
+    liveSources: parsed.data.live_sources,
     thumbnailUrl: parsed.data.thumbnail_url ?? null,
+    viewers: parsed.data.viewers ?? 0,
+    team1: parsed.data.team1
+      ? {
+          name: parsed.data.team1.name.trim(),
+          logo: parsed.data.team1.logo ?? null,
+        }
+      : null,
+    team2: parsed.data.team2
+      ? {
+          name: parsed.data.team2.name.trim(),
+          logo: parsed.data.team2.logo ?? null,
+        }
+      : null,
   };
 }
 

@@ -10,38 +10,37 @@ function request() {
 }
 
 describe("GET /api/events/[id]/streams", () => {
-  it("returns the unified primary provider result", async () => {
+  it("returns the StreamFree primary provider result", async () => {
     vi.spyOn(streamsService, "getEventStreams").mockResolvedValueOnce({
-      provider: "streamed",
+      provider: "streamfree",
       streams: [
         {
           id: "primary-1",
           streamNo: 1,
           language: "English",
           hd: true,
-          embedUrl: "https://streamed.example/embed/1",
-          source: "alpha",
+          embedUrl: "https://strmfree.st/embed/1",
+          source: "streamfree",
         },
       ],
       providers: {
-        streamed: [
+        streamfree: [
           {
             id: "primary-1",
             streamNo: 1,
-            language: "English",
+            language: "StreamFree",
             hd: true,
-            embedUrl: "https://streamed.example/embed/1",
-            source: "alpha",
+            embedUrl: "https://strmfree.st/embed/1",
+            source: "streamfree",
           },
         ],
-        streamfree: [],
       },
     });
     const response = await GET(request(), {
       params: Promise.resolve({ id: "event-1" }),
     });
     expect(response.status).toBe(200);
-    expect((await response.json()).provider).toBe("streamed");
+    expect((await response.json()).provider).toBe("streamfree");
   });
 
   it("returns the unified StreamFree fallback result", async () => {
@@ -58,7 +57,6 @@ describe("GET /api/events/[id]/streams", () => {
         },
       ],
       providers: {
-        streamed: [],
         streamfree: [
           {
             id: "match-1-1",

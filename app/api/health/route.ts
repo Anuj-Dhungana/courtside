@@ -38,7 +38,7 @@ export async function GET() {
         : "unavailable"
       : "not_configured",
     upstream: {
-      streamedApi: upstream.ok ? "reachable" : "unreachable",
+      streamFreeApi: upstream.ok ? "reachable" : "unreachable",
       latencyMs: upstream.latencyMs,
     },
     timestamp: new Date().toISOString(),

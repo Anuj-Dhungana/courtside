@@ -1,7 +1,7 @@
 /**
  * Application domain models.
  *
- * These are the normalized shapes the UI consumes. Raw Streamed API responses
+ * These are the normalized shapes the UI consumes. Raw StreamFree API responses
  * are validated and mapped into these types inside lib/validation/normalize.ts
  * so external schema quirks never leak into components.
  */

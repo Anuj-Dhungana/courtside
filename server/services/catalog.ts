@@ -1,21 +1,12 @@
 import "server-only";
 
 import { getOrSet } from "@/lib/cache";
-import { streamedGet } from "@/lib/streamed/client";
 import {
-  apiMatchSchema,
-  apiSportSchema,
-  apiStreamSchema,
-  safeParseArray,
-} from "@/lib/streamed/types";
-import {
-  normalizeMatch,
-  PRE_LIVE_WINDOW_MS,
-  normalizeSport,
-  normalizeStream,
-  sortEvents,
-} from "@/lib/validation/normalize";
-import { logger } from "@/lib/utils/logger";
+  getStreamFreeStream,
+  listStreamFreeStreams,
+} from "@/server/streams/streamfree/client";
+import { streamFreeCategory, toStreamOptions } from "@/server/streams/streamfree/matcher";
+import type { StreamFreeStream } from "@/server/streams/streamfree/types";
 import type {
   SearchResults,
   Sport,
@@ -25,201 +16,99 @@ import type {
 } from "@/types";
 
 /**
- * Catalog service: the single entry point the app uses for sports data.
- *
- * Cache TTLs (soft/hard, seconds) — see docs/architecture.md:
- *   sports list   3600 / 86400
- *   live matches    15 / 90
- *   today matches   60 / 600
- *   all matches    120 / 900
- *   per-sport      60 / 600
- *   streams         30 / 120
+ * Catalog service backed by StreamFree's live catalog.
+ * StreamFree is the active source for both event discovery and streams.
  */
 
 const SAFE_SPORT_ID = /^[a-z0-9-]{1,64}$/i;
-const SAFE_SOURCE = /^[a-z0-9-]{1,64}$/i;
 const SAFE_SOURCE_ID = /^[A-Za-z0-9._-]{1,256}$/;
 
-export async function getSports(): Promise<Sport[]> {
-  return getOrSet("sports", { softTtl: 3600, hardTtl: 86400 }, async () => {
-    const payload = await streamedGet("/sports");
-    const { items, dropped } = safeParseArray(apiSportSchema, payload);
-    if (dropped > 0) logger.warn("sports_validation_dropped", { dropped });
-    return items.map(normalizeSport);
+function catalogCache(): Promise<StreamFreeStream[]> {
+  return getOrSet(
+    "streamfree:catalog:all",
+    { softTtl: 20, hardTtl: 60 },
+    () => listStreamFreeStreams(),
+  );
+}
+
+function streamStatus(stream: StreamFreeStream, now = Date.now()): SportEvent["status"] {
+  if ((stream.liveSources?.length ?? 0) > 0) return "live";
+  if (!stream.matchTimestamp) return "unknown";
+  const startTime = stream.matchTimestamp * 1000;
+  return startTime > now ? "scheduled" : "finished";
+}
+
+function toEvent(stream: StreamFreeStream): SportEvent {
+  const id = `streamfree-${stream.streamKey}`;
+  const home = stream.team1
+    ? { name: stream.team1.name, badgeUrl: stream.team1.logo }
+    : null;
+  const away = stream.team2
+    ? { name: stream.team2.name, badgeUrl: stream.team2.logo }
+    : null;
+
+  return {
+    id,
+    title: stream.name,
+    sportId: stream.category,
+    startTime: stream.matchTimestamp ? stream.matchTimestamp * 1000 : 0,
+    posterUrl: stream.thumbnailUrl,
+    popular: (stream.viewers ?? 0) > 0,
+    home,
+    away,
+    sources: [{ source: "streamfree", id: stream.streamKey }],
+    status: streamStatus(stream),
+  };
+}
+
+function sortEvents(events: SportEvent[]): SportEvent[] {
+  return [...events].sort((a, b) => {
+    const rank = (event: SportEvent) =>
+      event.status === "live"
+        ? 0
+        : event.status === "scheduled" || event.status === "upcoming"
+          ? 1
+          : 2;
+    const rankDiff = rank(a) - rank(b);
+    if (rankDiff !== 0) return rankDiff;
+    return (a.startTime || Number.MAX_SAFE_INTEGER) - (b.startTime || Number.MAX_SAFE_INTEGER);
   });
 }
 
-async function fetchMatches(
-  path: string,
-  cacheKey: string,
-  softTtl: number,
-  hardTtl: number,
-  isLive: boolean,
-): Promise<SportEvent[]> {
-  return getOrSet(cacheKey, { softTtl, hardTtl }, async () => {
-    const payload = await streamedGet(path);
-    const { items, dropped } = safeParseArray(apiMatchSchema, payload);
-    if (dropped > 0) {
-      logger.warn("matches_validation_dropped", { path, dropped });
-    }
-    return items.map((m) => normalizeMatch(m, { isLive }));
+export async function getSports(): Promise<Sport[]> {
+  return getOrSet("streamfree:sports", { softTtl: 300, hardTtl: 1800 }, async () => {
+    const streams = await catalogCache();
+    const categories = new Set(streams.map((stream) => stream.category));
+    return [...categories]
+      .sort()
+      .map((id) => ({ id, name: id.charAt(0).toUpperCase() + id.slice(1) }));
   });
+}
+
+async function catalogEvents(): Promise<SportEvent[]> {
+  return (await catalogCache()).map(toEvent);
 }
 
 export async function getLiveEvents(): Promise<SportEvent[]> {
-  const [events, todayMatches] = await Promise.all([
-    fetchMatches("/matches/live", "matches:live", 15, 90, true),
-    fetchMatches("/matches/all-today", "matches:today", 60, 600, false).catch(
-      () => [] as SportEvent[],
-    ),
-  ]);
-
-  // Include 24/7 dedicated live broadcast channels (e.g. US Open, Tennis Channel)
-  // Admin channels may have startTime of 0 or negative values (e.g. -3600000).
-  const channels = todayMatches.filter(
-    (c) => c.status === "live" && c.startTime <= 0,
-  );
-  const preLiveEvents = todayMatches.filter((event) => {
-    const startsIn = event.startTime - Date.now();
-    return (
-      event.startTime > 0 &&
-      startsIn > 0 &&
-      startsIn <= PRE_LIVE_WINDOW_MS &&
-      !["cancelled", "postponed", "suspended", "finished"].includes(
-        event.status,
-      )
-    );
-  });
-
-  // Deduplicate: If an admin channel represents the same event as a live match
-  // (shares a source ID or matching title), the admin channel takes priority because
-  // it has active streams and correct category (e.g. tennis vs other).
-  const supersededLiveIds = new Set<string>();
-  for (const ch of channels) {
-    const cleanChTitle = ch.title.replace(/[^\w\s]/g, "").trim().toLowerCase();
-    for (const ev of events) {
-      const sharesSource =
-        ch.sources &&
-        ch.sources.some(
-          (cs) =>
-            ev.sources &&
-            ev.sources.some(
-              (es) => es.id === cs.id || es.id === ch.id || ev.id === cs.id,
-            ),
-        );
-      const cleanEvTitle = ev.title.replace(/[^\w\s]/g, "").trim().toLowerCase();
-      const sameTitle = cleanChTitle.length > 2 && cleanChTitle === cleanEvTitle;
-
-      if (sharesSource || sameTitle) {
-        supersededLiveIds.add(ev.id);
-      }
-    }
-  }
-
-  const existingIds = new Set<string>();
-  const merged: SportEvent[] = [];
-
-  for (const ev of events) {
-    if (!supersededLiveIds.has(ev.id) && !existingIds.has(ev.id)) {
-      existingIds.add(ev.id);
-      merged.push(ev);
-    }
-  }
-
-  for (const ch of channels) {
-    if (!existingIds.has(ch.id)) {
-      existingIds.add(ch.id);
-      merged.push(ch);
-    }
-  }
-
-  for (const event of preLiveEvents) {
-    if (!existingIds.has(event.id)) {
-      existingIds.add(event.id);
-      merged.push({ ...event, status: "live" });
-    }
-  }
-
-  return sortEvents(merged);
+  return sortEvents((await catalogEvents()).filter((event) => event.status === "live"));
 }
 
 export async function getTodayEvents(): Promise<SportEvent[]> {
-  const [today, live] = await Promise.all([
-    fetchMatches("/matches/all-today", "matches:today", 60, 600, false),
-    getLiveEvents().catch(() => [] as SportEvent[]),
-  ]);
-  return sortEvents(mergeLiveStatus(today, live));
+  return sortEvents(await catalogEvents());
 }
 
 export async function getAllEvents(): Promise<SportEvent[]> {
-  const [all, live] = await Promise.all([
-    fetchMatches("/matches/all", "matches:all", 120, 900, false),
-    getLiveEvents().catch(() => [] as SportEvent[]),
-  ]);
-  return sortEvents(mergeLiveStatus(all, live));
+  return sortEvents(await catalogEvents());
 }
 
 export async function getPopularEvents(): Promise<SportEvent[]> {
-  const events = await fetchMatches(
-    "/matches/all-today/popular",
-    "matches:today:popular",
-    60,
-    600,
-    false,
-  );
-  const live = await getLiveEvents().catch(() => [] as SportEvent[]);
-  return sortEvents(mergeLiveStatus(events, live));
+  return sortEvents((await catalogEvents()).filter((event) => event.popular));
 }
 
 export async function getSportEvents(sportId: string): Promise<SportEvent[]> {
   if (!SAFE_SPORT_ID.test(sportId)) return [];
-  const [events, live] = await Promise.all([
-    fetchMatches(
-      `/matches/${encodeURIComponent(sportId)}`,
-      `matches:sport:${sportId}`,
-      60,
-      600,
-      false,
-    ),
-    getLiveEvents().catch(() => [] as SportEvent[]),
-  ]);
-  return sortEvents(mergeLiveStatus(events, live, sportId));
-}
-
-/** Mark events as live when they appear in the authoritative live feed. */
-function mergeLiveStatus(
-  events: SportEvent[],
-  live: SportEvent[],
-  filterSportId?: string,
-): SportEvent[] {
-  const relevantLive = filterSportId
-    ? live.filter((e) => e.sportId === filterSportId)
-    : live;
-
-  if (relevantLive.length === 0) return events;
-  const liveMap = new Map(relevantLive.map((e) => [e.id, e]));
-  const existingIds = new Set<string>();
-
-  const merged = events.map((e) => {
-    existingIds.add(e.id);
-    const liveMatch = liveMap.get(e.id);
-    if (liveMatch) {
-      return {
-        ...e,
-        status: "live" as const,
-        sources: liveMatch.sources.length > 0 ? liveMatch.sources : e.sources,
-      };
-    }
-    return e;
-  });
-
-  for (const liveEvent of relevantLive) {
-    if (!existingIds.has(liveEvent.id)) {
-      merged.push(liveEvent);
-    }
-  }
-
-  return merged;
+  const category = streamFreeCategory(sportId) ?? sportId.toLowerCase();
+  return sortEvents((await catalogEvents()).filter((event) => event.sportId === category));
 }
 
 export async function getEventById(id: string): Promise<SportEvent | null> {
@@ -235,23 +124,17 @@ export async function getStreams(
   source: string,
   sourceId: string,
 ): Promise<StreamOption[]> {
-  if (!SAFE_SOURCE.test(source) || !SAFE_SOURCE_ID.test(sourceId)) {
+  if (source !== "streamfree" || !SAFE_SOURCE_ID.test(sourceId)) {
     return [];
   }
   return getOrSet(
-    `streams:${source}:${sourceId}`,
+    `streamfree:streams:${sourceId}`,
     { softTtl: 30, hardTtl: 120 },
     async () => {
-      const payload = await streamedGet(
-        `/stream/${encodeURIComponent(source)}/${encodeURIComponent(sourceId)}`,
-      );
-      const { items, dropped } = safeParseArray(apiStreamSchema, payload);
-      if (dropped > 0) {
-        logger.warn("streams_validation_dropped", { source, dropped });
-      }
-      return items
-        .map(normalizeStream)
-        .filter((s) => isSafeExternalUrl(s.embedUrl));
+      const stream = await getStreamFreeStream(sourceId);
+      return stream
+        ? toStreamOptions(stream).filter((s) => isSafeExternalUrl(s.embedUrl))
+        : [];
     },
   );
 }
@@ -322,7 +205,7 @@ export async function checkUpstreamHealth(): Promise<{
 }> {
   const started = Date.now();
   try {
-    await streamedGet("/sports");
+    await catalogCache();
     return { ok: true, latencyMs: Date.now() - started };
   } catch {
     return { ok: false, latencyMs: Date.now() - started };

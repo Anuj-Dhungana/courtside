@@ -23,10 +23,10 @@ const securityHeaders = [
       // Next dev/HMR + hydration need inline/eval in dev; production keeps inline for Next runtime bootstrapping.
       isDev
         ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-        : "script-src 'self' 'unsafe-inline'",
+        : "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
       "img-src 'self' data: https:",
       "font-src 'self'",
-      "connect-src 'self' ws: wss: https:",
+      "connect-src 'self' ws: wss: https: https://vitals.vercel-insights.com",
       // Allow live sports stream iframes from third-party embed hosts.
       "frame-src 'self' https: http: blob: data:",
       "media-src 'self' https: blob: data:",

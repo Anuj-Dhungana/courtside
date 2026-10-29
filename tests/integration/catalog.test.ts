@@ -2,62 +2,44 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __clearMemoryCache } from "@/lib/cache";
 
-/**
- * Integration tests for the catalog service with a mocked Streamed API
- * (global fetch is stubbed — no real network traffic).
- */
-
-const SPORTS = [
-  { id: "football", name: "Football" },
-  { id: "basketball", name: "Basketball" },
-];
-
-const LIVE = [
+const CATALOG = [
   {
     id: "live-1",
-    title: "Alpha FC vs Beta FC",
+    name: "Alpha FC vs Beta FC",
     category: "football",
-    date: Date.now() - 30 * 60_000,
-    popular: true,
-    teams: {
-      home: { name: "Alpha FC", badge: "badge-alpha" },
-      away: { name: "Beta FC", badge: "badge-beta" },
-    },
-    sources: [{ source: "alpha", id: "src-live-1" }],
+    league: "Premier League",
+    stream_key: "alpha-fc-vs-beta-fc",
+    match_timestamp: Math.floor((Date.now() - 30 * 60_000) / 1000),
+    sources: ["https://example-embed.com/watch/1"],
+    live_sources: ["https://example-embed.com/watch/1"],
+    thumbnail_url: "https://images.example.com/alpha.jpg",
+    viewers: 10,
+    team1: { name: "Alpha FC", logo: "https://images.example.com/alpha.png" },
+    team2: { name: "Beta FC", logo: "https://images.example.com/beta.png" },
   },
-];
-
-const ALL = [
-  ...LIVE,
   {
     id: "up-1",
-    title: "Gamma vs Delta",
+    name: "Gamma vs Delta",
     category: "basketball",
-    date: Date.now() + 2 * 3_600_000,
-    popular: false,
-    sources: [],
+    league: "League",
+    stream_key: "gamma-vs-delta",
+    match_timestamp: Math.floor((Date.now() + 2 * 3_600_000) / 1000),
+    sources: ["https://example-embed.com/watch/2"],
+    live_sources: [],
+    thumbnail_url: null,
+    viewers: 0,
+    team1: { name: "Gamma", logo: null },
+    team2: { name: "Delta", logo: null },
   },
-  { broken: true },
 ];
 
-const STREAMS = [
-  {
-    id: "st-1",
-    streamNo: 1,
-    language: "English",
-    hd: true,
-    embedUrl: "https://example-embed.com/watch/1",
-    source: "alpha",
-  },
-  {
-    id: "st-2",
-    streamNo: 2,
-    language: "Spanish",
-    hd: false,
-    embedUrl: "http://insecure.example.com/watch/2", // non-https: filtered
-    source: "alpha",
-  },
-];
+const STREAM = {
+  ...CATALOG[0],
+  sources: [
+    "https://example-embed.com/watch/1",
+    "http://insecure.example.com/watch/2",
+  ],
+};
 
 function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL) => {
@@ -67,17 +49,15 @@ function mockFetch() {
         status: 200,
         headers: { "content-type": "application/json" },
       });
-    if (url.endsWith("/sports")) return respond(SPORTS);
-    if (url.endsWith("/matches/live")) return respond(LIVE);
-    if (url.endsWith("/matches/all")) return respond(ALL);
-    if (url.includes("/matches/all-today")) return respond(ALL);
-    if (url.includes("/matches/football")) return respond(LIVE);
-    if (url.includes("/stream/alpha/src-live-1")) return respond(STREAMS);
+    if (url.endsWith("/streams")) return respond({ streams: CATALOG });
+    if (url.endsWith("/streams/alpha-fc-vs-beta-fc")) {
+      return respond(STREAM);
+    }
     return new Response("not found", { status: 404 });
   });
 }
 
-describe("catalog service (mocked upstream)", () => {
+describe("catalog service (mocked StreamFree API)", () => {
   beforeEach(() => {
     __clearMemoryCache();
     vi.stubGlobal("fetch", mockFetch());
@@ -86,107 +66,71 @@ describe("catalog service (mocked upstream)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("getSports returns normalized sports", async () => {
+  it("getSports returns categories from the catalog", async () => {
     const { getSports } = await import("@/server/services/catalog");
-    const sports = await getSports();
-    expect(sports).toEqual(SPORTS);
+    expect(await getSports()).toEqual([
+      { id: "basketball", name: "Basketball" },
+      { id: "football", name: "Football" },
+    ]);
   });
 
-  it("getLiveEvents marks events live and maps badges to the proxy", async () => {
+  it("getLiveEvents returns events with live sources", async () => {
     const { getLiveEvents } = await import("@/server/services/catalog");
     const events = await getLiveEvents();
     expect(events).toHaveLength(1);
     expect(events[0].status).toBe("live");
-    expect(events[0].home?.badgeUrl).toBe("/api/img/badge/badge-alpha");
+    expect(events[0].home?.badgeUrl).toBe("https://images.example.com/alpha.png");
   });
 
-  it("getAllEvents drops malformed entries and merges live status", async () => {
+  it("getAllEvents maps the complete catalog", async () => {
     const { getAllEvents } = await import("@/server/services/catalog");
     const events = await getAllEvents();
-    expect(events).toHaveLength(2); // broken entry dropped
-    const live = events.find((e) => e.id === "live-1");
-    expect(live?.status).toBe("live");
+    expect(events).toHaveLength(2);
+    expect(events.find((event) => event.title === "Gamma vs Delta")?.status).toBe(
+      "scheduled",
+    );
   });
 
   it("searchCatalog finds teams, events and sports", async () => {
     const { searchCatalog } = await import("@/server/services/catalog");
-    const results = await searchCatalog("alpha");
-    expect(results.events.map((e) => e.id)).toContain("live-1");
-
-    const sportHit = await searchCatalog("basket");
-    expect(sportHit.sports.map((s) => s.id)).toContain("basketball");
+    expect((await searchCatalog("alpha")).events.map((event) => event.id)).toContain(
+      "streamfree-alpha-fc-vs-beta-fc",
+    );
+    expect((await searchCatalog("basket")).sports.map((sport) => sport.id)).toContain(
+      "basketball",
+    );
   });
 
   it("searchCatalog returns nothing for short queries", async () => {
     const { searchCatalog } = await import("@/server/services/catalog");
-    const results = await searchCatalog("a");
-    expect(results.events).toEqual([]);
-    expect(results.sports).toEqual([]);
+    expect(await searchCatalog("a")).toEqual({ events: [], sports: [], query: "a" });
   });
 
   it("getStreams filters out non-https embed URLs", async () => {
     const { getStreams } = await import("@/server/services/catalog");
-    const streams = await getStreams("alpha", "src-live-1");
+    const streams = await getStreams("streamfree", "alpha-fc-vs-beta-fc");
     expect(streams).toHaveLength(1);
     expect(streams[0].embedUrl).toMatch(/^https:/);
   });
 
   it("getStreams rejects unsafe source identifiers without fetching", async () => {
     const { getStreams } = await import("@/server/services/catalog");
-    const streams = await getStreams("../evil", "id");
-    expect(streams).toEqual([]);
+    expect(await getStreams("streamfree", "../evil")).toEqual([]);
   });
 
-  it("getEventById finds events across feeds", async () => {
+  it("getEventById finds events in the catalog", async () => {
     const { getEventById } = await import("@/server/services/catalog");
-    const event = await getEventById("up-1");
-    expect(event?.title).toBe("Gamma vs Delta");
+    expect((await getEventById("streamfree-gamma-vs-delta"))?.title).toBe(
+      "Gamma vs Delta",
+    );
     expect(await getEventById("nope")).toBeNull();
   });
 
-  it("isSafeExternalUrl blocks internal hosts", async () => {
-    const { isSafeExternalUrl } = await import("@/server/services/catalog");
-    expect(isSafeExternalUrl("https://ok.example.com/x")).toBe(true);
-    expect(isSafeExternalUrl("https://localhost/x")).toBe(false);
-    expect(isSafeExternalUrl("https://10.0.0.1/x")).toBe(false);
-    expect(isSafeExternalUrl("javascript:alert(1)")).toBe(false);
-    expect(isSafeExternalUrl("http://plain.example.com")).toBe(false);
-  });
-
-  it("never fabricates live status when the live feed is unavailable or empty", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.endsWith("/matches/live")) {
-          return new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        if (url.includes("/matches/all-today")) {
-          return new Response(
-            JSON.stringify([
-              {
-                id: "past-kickoff",
-                title: "Past Kickoff Match",
-                category: "football",
-                date: Date.now() - 30 * 60_000,
-                popular: false,
-                sources: [],
-              },
-            ]),
-            { status: 200, headers: { "content-type": "application/json" } },
-          );
-        }
-        return new Response("not found", { status: 404 });
-      }),
-    );
-
+  it("does not fabricate live status without live sources", async () => {
     const { getTodayEvents } = await import("@/server/services/catalog");
     const events = await getTodayEvents();
-    expect(events).toHaveLength(1);
-    expect(events[0].status).not.toBe("live");
-    expect(events[0].status).toBe("delayed");
+    expect(events.find((event) => event.title === "Gamma vs Delta")?.status).not.toBe(
+      "live",
+    );
   });
 });

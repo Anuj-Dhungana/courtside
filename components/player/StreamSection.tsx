@@ -7,13 +7,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import type { StreamOption } from "@/types";
 
-type Provider = "streamed" | "streamfree";
+type Provider = "streamfree";
 
 interface EventStreamsResponse {
   streams?: StreamOption[];
   provider?: Provider | "none";
   providers?: {
-    streamed?: StreamOption[];
     streamfree?: StreamOption[];
   };
 }
@@ -72,8 +71,8 @@ export function StreamSection({
   const [streams, setStreams] = useState<StreamOption[] | null>(null);
   const [providerStreams, setProviderStreams] = useState<
     Record<Provider, StreamOption[]>
-  >({ streamed: [], streamfree: [] });
-  const [selectedProvider, setSelectedProvider] = useState<Provider>("streamed");
+  >({ streamfree: [] });
+  const [selectedProvider, setSelectedProvider] = useState<Provider>("streamfree");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
@@ -86,14 +85,11 @@ export function StreamSection({
       if (!res.ok) throw new Error(`status ${res.status}`);
       const data = (await res.json()) as EventStreamsResponse;
       const nextProviders = {
-        streamed: data.providers?.streamed ?? [],
         streamfree: data.providers?.streamfree ?? [],
       };
-      const defaultProvider =
-        nextProviders.streamed.length > 0 ? "streamed" : "streamfree";
-      const merged = nextProviders[defaultProvider];
+      const merged = nextProviders.streamfree;
       setProviderStreams(nextProviders);
-      setSelectedProvider(defaultProvider);
+      setSelectedProvider("streamfree");
       merged.sort((a, b) => {
         if (a.hd !== b.hd) return a.hd ? -1 : 1;
         return a.streamNo - b.streamNo;
@@ -166,7 +162,7 @@ export function StreamSection({
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Choose stream provider">
-            {(["streamed", "streamfree"] as const).map((provider) => {
+            {(["streamfree"] as const).map((provider) => {
               const available = providerStreams[provider].length > 0;
               if (!available) return null;
               return (
@@ -180,7 +176,7 @@ export function StreamSection({
                       : "border border-surface-700 bg-surface-900 text-ink-300 hover:bg-surface-800 hover:text-white"
                   }`}
                 >
-                  {provider === "streamed" ? "Streamed" : "StreamFree"}
+                  StreamFree
                   <span className="ml-1.5 opacity-70">({providerStreams[provider].length})</span>
                 </button>
               );

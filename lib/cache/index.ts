@@ -7,7 +7,7 @@ import { logger } from "@/lib/utils/logger";
  *  - The app must keep working when Redis is absent or down.
  *  - Stale-while-revalidate semantics via `getOrSet` with soft/hard TTLs.
  *  - Request coalescing: concurrent misses for the same key share one
- *    upstream fetch (prevents thundering-herd against the Streamed API).
+ *    upstream fetch (prevents thundering-herd against the StreamFree API).
  *
  * TTL strategy (documented in docs/architecture.md):
  *  - live matches:      15s soft / 60s hard

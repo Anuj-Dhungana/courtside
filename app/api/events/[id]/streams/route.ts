@@ -30,7 +30,7 @@ export async function GET(
       {
         streams: [],
         provider: "none",
-        providers: { streamed: [], streamfree: [] },
+        providers: { streamfree: [] },
         error: "No playable stream is currently available.",
       },
       { status: 200 },
